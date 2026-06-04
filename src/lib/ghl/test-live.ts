@@ -17,7 +17,8 @@
  * 5. Muestra los resultados en consola
  */
 
-import 'dotenv/config'
+import { config } from 'dotenv'
+config({ path: '.env.local' }) // Next.js usa .env.local, no .env
 import { getUnitedDraftClients, getContactDisplayName } from './contacts'
 import { getContactConversation, getConversationMessages, formatMessagesForClaude } from './conversations'
 import { analyzeConversation } from '../ai/analyze-conversation'

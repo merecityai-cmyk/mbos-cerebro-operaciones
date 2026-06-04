@@ -2,9 +2,13 @@ import Anthropic from '@anthropic-ai/sdk'
 import { buildSatisfactionPrompt } from './prompts'
 import type { SatisfactionAnalysisResult } from '@/types/ai'
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+let _client: Anthropic | null = null
+function getClient(): Anthropic {
+  if (!_client) {
+    _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  }
+  return _client
+}
 
 const SYSTEM_PROMPT = `Eres un analista de satisfacción de clientes para United Draft S.A.S., empresa de administración y contabilidad colombiana.
 Tu rol es evaluar el nivel de satisfacción de cada cliente basándote en sus conversaciones semanales y el cumplimiento de tareas.
@@ -44,8 +48,8 @@ export async function analyzeSatisfaction(
 
   const userPrompt = buildSatisfactionPrompt(clientName, weekConversations, stats)
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-5',
+  const message = await getClient().messages.create({
+    model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: [
       {

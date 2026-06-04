@@ -13,7 +13,8 @@
  *   UPDATE clients SET ghl_contact_id = '<ID_REAL>' WHERE name = '<NOMBRE>';
  */
 
-import 'dotenv/config'
+import { config } from 'dotenv'
+config({ path: '.env.local' })
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import bcrypt from 'bcryptjs'

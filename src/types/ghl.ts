@@ -46,6 +46,7 @@ export interface GHLContact {
   phone?: string
   companyName?: string
   locationId: string
+  tags?: string[]
 }
 
 export interface GHLConversationsResponse {

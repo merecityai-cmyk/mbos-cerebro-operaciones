@@ -7,9 +7,17 @@ interface GHLContactResponse {
 
 interface GHLContactsSearchResponse {
   contacts: GHLContact[]
-  count: number
-  total: number
+  count?: number
+  total?: number
   traceId?: string
+  meta?: {
+    total: number
+    nextPage?: number
+    prevPage?: number | null
+    startAfterId?: string
+    startAfter?: number
+    nextPageUrl?: string
+  }
 }
 
 // La etiqueta que identifica clientes activos de United Draft en GHL
@@ -27,7 +35,8 @@ export async function getContactById(
 
 /**
  * Obtiene TODOS los contactos con la etiqueta "cliente united" en la location.
- * Pagina automáticamente hasta recuperar todos.
+ * GHL v2 no filtra por tag en GET /contacts/ — usamos el endpoint de búsqueda
+ * por query vacío y filtramos client-side por etiqueta.
  *
  * Estos son los únicos contactos que el job diario debe procesar.
  */
@@ -35,26 +44,31 @@ export async function getUnitedDraftClients(
   locationId: string
 ): Promise<GHLContact[]> {
   const allContacts: GHLContact[] = []
-  let skip = 0
-  const limit = 100
+  let startAfterId: string | undefined
 
   while (true) {
-    const data = await ghlFetch<GHLContactsSearchResponse>('/contacts/', {
-      params: {
-        locationId,
-        tags: UNITED_DRAFT_CLIENT_TAG,
-        limit,
-        skip,
-      },
-    })
+    const params: Record<string, string | number | boolean | undefined> = {
+      locationId,
+      limit: 100,
+      ...(startAfterId ? { startAfterId } : {}),
+    }
 
+    const data = await ghlFetch<GHLContactsSearchResponse>('/contacts/', { params })
     const batch = data.contacts ?? []
-    allContacts.push(...batch)
 
-    // Si recibimos menos de `limit`, llegamos al final
-    if (batch.length < limit) break
+    // Filtrar client-side: solo contactos con la etiqueta "cliente united"
+    const tagged = batch.filter(
+      (c) =>
+        Array.isArray(c.tags) &&
+        c.tags.some(
+          (t: string) => t.toLowerCase() === UNITED_DRAFT_CLIENT_TAG.toLowerCase()
+        )
+    )
+    allContacts.push(...tagged)
 
-    skip += limit
+    // GHL pagina con startAfterId del último elemento
+    if (batch.length < 100 || !data.meta?.nextPage) break
+    startAfterId = data.meta.startAfterId ?? batch[batch.length - 1].id
   }
 
   return allContacts

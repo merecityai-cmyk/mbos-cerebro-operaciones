@@ -13,4 +13,10 @@ export {
   getGHLTask,
   mapGHLStatusToLocal,
 } from './tasks'
-export { getContactById, searchContacts, getContactDisplayName } from './contacts'
+export {
+  getContactById,
+  getUnitedDraftClients,
+  searchContacts,
+  getContactDisplayName,
+  UNITED_DRAFT_CLIENT_TAG,
+} from './contacts'

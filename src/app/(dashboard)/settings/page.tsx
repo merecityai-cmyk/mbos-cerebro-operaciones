@@ -1,28 +1,40 @@
 import { requireRole } from '@/lib/auth/helpers'
 import { db } from '@/lib/db'
-import { taskRoutingRules, users } from '@/lib/db/schema'
+import { taskRoutingRules, users, clients } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { TriggerJobButton } from './TriggerJobButton'
 import { ReportsStatus } from './ReportsStatus'
+import { ClientsManager } from './ClientsManager'
+import { UsersManager } from './UsersManager'
 
 export default async function SettingsPage() {
-  await requireRole('manager')
+  const session = await requireRole('manager')
 
-  const rules = await db
-    .select({
+  const [rules, allUsers, allClients] = await Promise.all([
+    db.select({
       id: taskRoutingRules.id,
       keyword: taskRoutingRules.keyword,
       priority: taskRoutingRules.priority,
       advisorName: users.name,
     })
-    .from(taskRoutingRules)
-    .innerJoin(users, eq(taskRoutingRules.assignedToId, users.id))
-    .orderBy(taskRoutingRules.priority)
+      .from(taskRoutingRules)
+      .innerJoin(users, eq(taskRoutingRules.assignedToId, users.id))
+      .orderBy(taskRoutingRules.priority),
 
-  const allUsers = await db
-    .select({ id: users.id, name: users.name, email: users.email, role: users.role })
-    .from(users)
-    .orderBy(users.name)
+    db.select({ id: users.id, name: users.name, email: users.email, role: users.role })
+      .from(users)
+      .orderBy(users.name),
+
+    db.select({
+      id: clients.id,
+      name: clients.name,
+      advisorId: clients.assignedAdvisorId,
+    })
+      .from(clients)
+      .orderBy(clients.name),
+  ])
+
+  const advisors = allUsers.filter(u => u.role === 'advisor' || u.role === 'manager')
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -30,6 +42,12 @@ export default async function SettingsPage() {
         <h2 className="text-xl font-semibold text-[#0F172A]">Configuración</h2>
         <p className="text-sm text-[#64748B] mt-0.5">Solo visible para el gerente</p>
       </div>
+
+      {/* Gestión de clientes */}
+      <ClientsManager initialClients={allClients} advisors={advisors} />
+
+      {/* Gestión de usuarios */}
+      <UsersManager initialUsers={allUsers} currentUserId={session.user.id as string} />
 
       {/* Reglas de routing */}
       <div className="bg-white border border-[#E2E8F0] rounded-lg overflow-hidden">
@@ -61,46 +79,17 @@ export default async function SettingsPage() {
             </tbody>
           </table>
         )}
-        <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-          <p className="text-xs text-[#64748B]">
-            Para agregar o modificar reglas, edita la tabla <code className="bg-[#E2E8F0] px-1 rounded">task_routing_rules</code> directamente en la base de datos.
-          </p>
-        </div>
       </div>
 
-      {/* Usuarios del sistema */}
-      <div className="bg-white border border-[#E2E8F0] rounded-lg overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#E2E8F0]">
-          <h3 className="text-sm font-semibold text-[#0F172A]">Usuarios del sistema</h3>
-        </div>
-        <table className="w-full text-sm">
-          <tbody className="divide-y divide-[#F1F5F9]">
-            {allUsers.map((u) => (
-              <tr key={u.id} className="hover:bg-[#F8FAFC]">
-                <td className="px-5 py-3 font-medium text-[#0F172A]">{u.name}</td>
-                <td className="px-5 py-3 text-[#64748B]">{u.email}</td>
-                <td className="px-5 py-3">
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${u.role === 'manager' ? 'bg-[#DBEAFE] text-[#1E40AF]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
-                    {u.role === 'manager' ? 'Gerente' : 'Asesora'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Trigger manual del job */}
+      {/* Ejecución manual */}
       <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
         <h3 className="text-sm font-semibold text-[#0F172A] mb-1">Ejecución manual del job diario</h3>
         <p className="text-xs text-[#64748B] mb-4">
-          Fuerza el análisis de conversaciones sin esperar al cron de las 7am UTC.
-          Útil para probar o cuando se necesita procesar conversaciones urgentes.
+          Fuerza el análisis de conversaciones sin esperar al cron de las 7am.
         </p>
         <TriggerJobButton />
       </div>
 
-      {/* Estado de reportes */}
       <ReportsStatus />
     </div>
   )

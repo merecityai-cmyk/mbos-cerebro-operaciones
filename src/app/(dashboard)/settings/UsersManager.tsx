@@ -16,7 +16,8 @@ interface UsersManagerProps {
   currentUserId: string
 }
 
-const emptyForm = { name: '', email: '', password: '', role: 'advisor' as const }
+type FormState = { name: string; email: string; password: string; role: 'advisor' | 'manager' }
+const emptyForm: FormState = { name: '', email: '', password: '', role: 'advisor' }
 
 export function UsersManager({ initialUsers, currentUserId }: UsersManagerProps) {
   const [users, setUsers] = useState(initialUsers)

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
-export type DatePeriod = 'all' | 'today' | 'this_week' | 'last_week' | 'this_month'
+export type DatePeriod = 'all' | 'today' | 'this_week' | 'last_week' | 'this_month' | 'custom'
 
 const PERIODS: { value: DatePeriod; label: string }[] = [
   { value: 'all', label: 'Todas' },
@@ -12,6 +12,7 @@ const PERIODS: { value: DatePeriod; label: string }[] = [
   { value: 'this_week', label: 'Esta semana' },
   { value: 'last_week', label: 'Semana pasada' },
   { value: 'this_month', label: 'Este mes' },
+  { value: 'custom', label: 'Rango' },
 ]
 
 interface TaskFiltersProps {
@@ -20,10 +21,14 @@ interface TaskFiltersProps {
   selectedAdvisorId: string | null
   selectedClientId: string | null
   selectedPeriod: DatePeriod
+  customDateFrom: string
+  customDateTo: string
   searchQuery: string
   onAdvisorChange: (id: string | null) => void
   onClientChange: (id: string | null) => void
   onPeriodChange: (period: DatePeriod) => void
+  onCustomDateFromChange: (date: string) => void
+  onCustomDateToChange: (date: string) => void
   onSearchChange: (q: string) => void
 }
 
@@ -33,10 +38,14 @@ export function TaskFilters({
   selectedAdvisorId,
   selectedClientId,
   selectedPeriod,
+  customDateFrom,
+  customDateTo,
   searchQuery,
   onAdvisorChange,
   onClientChange,
   onPeriodChange,
+  onCustomDateFromChange,
+  onCustomDateToChange,
   onSearchChange,
 }: TaskFiltersProps) {
   return (
@@ -53,7 +62,7 @@ export function TaskFilters({
                 : 'bg-white text-[#64748B] border-[#E2E8F0] hover:border-[#1E40AF]/40 hover:text-[#1E40AF]'
             )}
           >
-            Todas
+            Todos
           </button>
           {advisors.map((a) => (
             <button
@@ -110,6 +119,34 @@ export function TaskFilters({
           ))}
         </select>
       </div>
+
+      {/* Fila 3: Rango personalizado (solo cuando está seleccionado) */}
+      {selectedPeriod === 'custom' && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-[#64748B] font-medium">Desde</span>
+          <input
+            type="date"
+            value={customDateFrom}
+            onChange={(e) => onCustomDateFromChange(e.target.value)}
+            className="h-8 text-xs border border-[#E2E8F0] rounded-md px-2 bg-white text-[#0F172A] focus:outline-none focus:border-[#1E40AF]"
+          />
+          <span className="text-xs text-[#64748B] font-medium">Hasta</span>
+          <input
+            type="date"
+            value={customDateTo}
+            onChange={(e) => onCustomDateToChange(e.target.value)}
+            className="h-8 text-xs border border-[#E2E8F0] rounded-md px-2 bg-white text-[#0F172A] focus:outline-none focus:border-[#1E40AF]"
+          />
+          {(customDateFrom || customDateTo) && (
+            <button
+              onClick={() => { onCustomDateFromChange(''); onCustomDateToChange('') }}
+              className="h-8 px-2 text-xs text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] rounded-md bg-white"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

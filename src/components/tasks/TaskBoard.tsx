@@ -8,8 +8,16 @@ import type { TaskWithRelations, TaskStatus } from '@/types'
 
 const COLUMNS: TaskStatus[] = ['pending', 'in_progress', 'completed', 'overdue']
 
-function getPeriodRange(period: DatePeriod): { start: Date; end: Date } | null {
+function getPeriodRange(period: DatePeriod, customFrom: string, customTo: string): { start: Date; end: Date } | null {
   if (period === 'all') return null
+
+  if (period === 'custom') {
+    if (!customFrom && !customTo) return null
+    const start = customFrom ? new Date(customFrom + 'T00:00:00') : new Date(0)
+    const end = customTo ? new Date(customTo + 'T23:59:59') : new Date(9999, 11, 31)
+    return { start, end }
+  }
+
   const now = new Date()
   const start = new Date(now)
   const end = new Date(now)
@@ -50,6 +58,8 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
   const [selectedAdvisorId, setSelectedAdvisorId] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState<DatePeriod>('all')
+  const [customDateFrom, setCustomDateFrom] = useState('')
+  const [customDateTo, setCustomDateTo] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
   const [optimisticTasks, updateOptimistic] = useOptimistic(
@@ -66,7 +76,7 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
       t.client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.title.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const range = getPeriodRange(selectedPeriod)
+    const range = getPeriodRange(selectedPeriod, customDateFrom, customDateTo)
     const matchPeriod = !range || (
       new Date(t.createdAt) >= range.start &&
       new Date(t.createdAt) <= range.end
@@ -75,7 +85,6 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
     return matchAdvisor && matchClient && matchSearch && matchPeriod
   })
 
-  // Agrupar por status
   const tasksByStatus = COLUMNS.reduce<Record<TaskStatus, TaskWithRelations[]>>(
     (acc, status) => {
       acc[status] = filteredTasks.filter((t) => t.status === status)
@@ -91,13 +100,8 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
 
   const handleStatusChange = useCallback(
     async (taskId: string, status: TaskStatus) => {
-      // 1. Actualizar optimisticamente
       updateOptimistic({ id: taskId, status })
-
-      // 2. Actualizar el task seleccionado en el panel también
       setSelectedTask((prev) => (prev?.id === taskId ? { ...prev, status } : prev))
-
-      // 3. Llamar a la API
       await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -133,21 +137,23 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
       <TaskFilters
         advisors={advisors}
         clients={clients}
         selectedAdvisorId={selectedAdvisorId}
         selectedClientId={selectedClientId}
         selectedPeriod={selectedPeriod}
+        customDateFrom={customDateFrom}
+        customDateTo={customDateTo}
         searchQuery={searchQuery}
         onAdvisorChange={setSelectedAdvisorId}
         onClientChange={setSelectedClientId}
         onPeriodChange={setSelectedPeriod}
+        onCustomDateFromChange={setCustomDateFrom}
+        onCustomDateToChange={setCustomDateTo}
         onSearchChange={setSearchQuery}
       />
 
-      {/* Tablero Kanban */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         {COLUMNS.map((status) => (
           <TaskColumn
@@ -159,7 +165,6 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
         ))}
       </div>
 
-      {/* Panel de detalle */}
       <TaskDetailPanel
         task={selectedTask}
         advisors={advisors}

@@ -25,23 +25,21 @@ export function TriggerJobButton() {
     setError(null)
 
     try {
-      const res = await fetch('/api/cron/analyze-conversations', {
+      const res = await fetch('/api/internal/trigger-job', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ''}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job: 'analyze-conversations' }),
       })
 
       if (res.status === 401) {
-        setError('No autorizado — verifica CRON_SECRET')
+        setError('Sesión expirada — recarga la página')
         setState('error')
         return
       }
 
-      const data = await res.json()
-      setResult(data)
       setState('success')
+      setResult(null)
+      window.dispatchEvent(new Event('job-started'))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
       setState('error')
@@ -63,17 +61,12 @@ export function TriggerJobButton() {
         )}
       </Button>
 
-      {state === 'success' && result && (
+      {state === 'success' && (
         <div className="flex items-start gap-2 text-sm bg-[#F0FDF4] border border-[#16A34A]/20 rounded-md px-3 py-2.5">
           <CheckCircle className="h-4 w-4 text-[#16A34A] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-[#16A34A]">Job completado en {result.executionMs}ms</p>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Clientes procesados: {result.processed} · Tareas creadas: {result.tasksCreated} · Omitidos: {result.skipped}
-            </p>
-            {result.errors?.length > 0 && (
-              <p className="text-xs text-[#DC2626] mt-0.5">{result.errors.length} error(es)</p>
-            )}
+            <p className="font-medium text-[#16A34A]">Job iniciado</p>
+            <p className="text-xs text-[#64748B] mt-0.5">Procesando en segundo plano — tarda 4-8 min para los 24 clientes.</p>
           </div>
         </div>
       )}

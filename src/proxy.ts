@@ -8,6 +8,11 @@ export default auth((req) => {
   // Rutas públicas — siempre accesibles
   const isPublicRoute = pathname === '/login'
 
+  // Rutas de NextAuth — deben pasar siempre
+  const isAuthRoute = pathname.startsWith('/api/auth/')
+
+  if (isAuthRoute) return NextResponse.next()
+
   // Rutas de cron — protegidas por Bearer token, no por sesión
   const isCronRoute = pathname.startsWith('/api/cron/')
 

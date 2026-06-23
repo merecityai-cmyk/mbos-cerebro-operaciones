@@ -8,6 +8,20 @@
       "when": 1780605776037,
       "tag": "0000_tense_pretty_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782240948305,
+      "tag": "0001_fast_switch",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782241758540,
+      "tag": "0002_clumsy_zombie",
+      "breakpoints": true
     }
   ]
 }

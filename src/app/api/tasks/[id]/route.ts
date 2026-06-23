@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/config'
 import { db } from '@/lib/db'
-import { tasks, clients, users } from '@/lib/db/schema'
+import { tasks, clients, users, taskAuditLog } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { updateGHLTaskStatus, updateGHLTaskAssignee } from '@/lib/ghl/tasks'
@@ -11,6 +11,7 @@ const patchSchema = z.object({
   status: z.enum(['pending', 'in_progress', 'completed', 'overdue']).optional(),
   assignedToId: z.string().uuid().optional(),
   dueDate: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
 })
 
 export async function GET(
@@ -62,7 +63,7 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { status, assignedToId, dueDate } = parsed.data
+  const { status, assignedToId, dueDate, notes } = parsed.data
 
   // Obtener tarea actual para el sync con GHL
   const [currentTask] = await db
@@ -82,6 +83,7 @@ export async function PATCH(
   }
   if (assignedToId !== undefined) updateData.assignedToId = assignedToId
   if (dueDate !== undefined) updateData.dueDate = dueDate
+  if (notes !== undefined) updateData.notes = notes
 
   // Actualizar en DB
   const [updated] = await db
@@ -89,6 +91,29 @@ export async function PATCH(
     .set(updateData)
     .where(eq(tasks.id, id))
     .returning()
+
+  // Audit log — registrar cambios de estado y asignado
+  const actorId = session.user.id as string
+  if (status !== undefined && status !== currentTask.status) {
+    await db.insert(taskAuditLog).values({
+      taskId: id,
+      userId: actorId,
+      field: 'status',
+      oldValue: currentTask.status,
+      newValue: status,
+    })
+  }
+  if (assignedToId !== undefined && assignedToId !== currentTask.assignedToId) {
+    const [oldUser] = await db.select({ name: users.name }).from(users).where(eq(users.id, currentTask.assignedToId)).limit(1)
+    const [newUser2] = await db.select({ name: users.name }).from(users).where(eq(users.id, assignedToId)).limit(1)
+    await db.insert(taskAuditLog).values({
+      taskId: id,
+      userId: actorId,
+      field: 'assignedTo',
+      oldValue: oldUser?.name ?? currentTask.assignedToId,
+      newValue: newUser2?.name ?? assignedToId,
+    })
+  }
 
   // Sincronizar con GHL (no-throw — si GHL falla, la DB queda actualizada)
   if (currentTask.ghlTaskId && currentTask.clientId) {

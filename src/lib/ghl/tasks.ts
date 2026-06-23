@@ -28,7 +28,6 @@ export async function createGHLTask(
     body: description ?? '',
     dueDate: dueDateFormatted,
     completed: false,
-    contactId,
     ...(assignedUserId ? { assignedTo: assignedUserId } : {}),
   }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { clients, users, tasks, conversationSnapshots } from '@/lib/db/schema'
-import { getUnitedDraftClients, getContactDisplayName } from '@/lib/ghl/contacts'
+import { getContactDisplayName } from '@/lib/ghl/contacts'
 import { getContactConversation, getConversationMessages, formatMessagesForClaude } from '@/lib/ghl/conversations'
 import { createGHLTask } from '@/lib/ghl/tasks'
 import { analyzeConversation } from '@/lib/ai/analyze-conversation'
@@ -58,43 +58,29 @@ export async function POST(req: NextRequest) {
         .map((u) => [u.ghlUserId!, u])
     )
 
-    // 3. Obtener contactos con tag "cliente united" desde GHL
-    console.log('[CRON] Buscando contactos con tag "cliente united"...')
-    const ghlContacts = await getUnitedDraftClients(LOCATION_ID)
-    console.log(`[CRON] ${ghlContacts.length} contactos encontrados`)
-
-    if (ghlContacts.length === 0) {
-      return NextResponse.json({
-        ...result,
-        message: 'No hay contactos con tag "cliente united" en GHL',
-        executionMs: Date.now() - startTime,
-      })
-    }
-
-    // 4. Obtener clientes de la DB (para cruzar con GHL contacts)
+    // 3. Cargar clientes directamente desde la DB (ya tienen ghlContactId real)
+    console.log('[CRON] Cargando clientes desde DB...')
     const dbClients = await db
       .select()
       .from(clients)
       .where(isNotNull(clients.ghlContactId))
 
-    const dbClientsByGhlId = Object.fromEntries(
-      dbClients.map((c) => [c.ghlContactId, c])
-    )
+    console.log(`[CRON] ${dbClients.length} clientes a procesar`)
 
-    // 5. Procesar cada contacto — try/catch individual para resiliencia
-    for (const contact of ghlContacts) {
-      const contactName = getContactDisplayName(contact)
+    if (dbClients.length === 0) {
+      return NextResponse.json({
+        ...result,
+        message: 'No hay clientes con ghlContactId en la DB',
+        executionMs: Date.now() - startTime,
+      })
+    }
+
+    // 4. Procesar cada cliente — try/catch individual para resiliencia
+    for (const dbClient of dbClients) {
+      const contactName = dbClient.name
 
       try {
-        console.log(`[CRON] Procesando: ${contactName} (${contact.id})`)
-
-        // Buscar cliente en nuestra DB por ghlContactId
-        const dbClient = dbClientsByGhlId[contact.id]
-        if (!dbClient) {
-          console.log(`[CRON] ${contactName}: no encontrado en DB — pendiente de sincronización`)
-          result.skipped++
-          continue
-        }
+        console.log(`[CRON] Procesando: ${contactName} (${dbClient.ghlContactId})`)
 
         // Obtener snapshot anterior
         const [snapshot] = await db
@@ -104,7 +90,7 @@ export async function POST(req: NextRequest) {
           .limit(1)
 
         // Obtener conversación activa en GHL
-        const conversation = await getContactConversation(LOCATION_ID, contact.id)
+        const conversation = await getContactConversation(LOCATION_ID, dbClient.ghlContactId!)
         if (!conversation) {
           console.log(`[CRON] ${contactName}: sin conversación activa`)
           result.skipped++
@@ -181,7 +167,7 @@ export async function POST(req: NextRequest) {
                 title: extracted.title,
                 description: extracted.description,
                 dueDate: extracted.dueDate ?? undefined,
-                contactId: contact.id,
+                contactId: dbClient.ghlContactId!,
                 assignedUserId: ghlAssignedUserId,
               })
             } catch (ghlErr) {

@@ -17,6 +17,7 @@ export default async function TasksPage() {
       status: tasks.status,
       source: tasks.source,
       dueDate: tasks.dueDate,
+      notes: tasks.notes,
       conversationId: tasks.conversationId,
       ghlTaskId: tasks.ghlTaskId,
       assignedAt: tasks.assignedAt,
@@ -39,11 +40,15 @@ export default async function TasksPage() {
     .innerJoin(users, eq(tasks.assignedToId, users.id))
     .orderBy(desc(tasks.createdAt))
 
-  // Asesoras para filtros y reasignación
   const advisors = await db
     .select({ id: users.id, name: users.name })
     .from(users)
     .orderBy(users.name)
+
+  const allClients = await db
+    .select({ id: clients.id, name: clients.name })
+    .from(clients)
+    .orderBy(clients.name)
 
   return (
     <div className="space-y-5">
@@ -57,6 +62,7 @@ export default async function TasksPage() {
       <TaskBoard
         initialTasks={rows as TaskWithRelations[]}
         advisors={advisors}
+        clients={allClients}
       />
     </div>
   )

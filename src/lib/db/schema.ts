@@ -75,10 +75,25 @@ export const tasks = pgTable('tasks', {
   conversationId: varchar('conversation_id', { length: 100 }),
   ghlTaskId: varchar('ghl_task_id', { length: 100 }),
   dueDate: date('due_date'),
+  notes: text('notes'),
   assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const taskAuditLog = pgTable('task_audit_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  taskId: uuid('task_id')
+    .notNull()
+    .references(() => tasks.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  field: varchar('field', { length: 50 }).notNull(), // 'status' | 'assignedTo'
+  oldValue: varchar('old_value', { length: 255 }),
+  newValue: varchar('new_value', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 export const conversationSnapshots = pgTable('conversation_snapshots', {
@@ -130,3 +145,4 @@ export type NewTask = typeof tasks.$inferInsert
 export type TaskRoutingRule = typeof taskRoutingRules.$inferSelect
 export type WeeklyReport = typeof weeklyReports.$inferSelect
 export type ConversationSnapshot = typeof conversationSnapshots.$inferSelect
+export type TaskAuditLog = typeof taskAuditLog.$inferSelect

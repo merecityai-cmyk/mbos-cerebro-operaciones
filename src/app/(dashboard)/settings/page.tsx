@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { taskRoutingRules, users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { TriggerJobButton } from './TriggerJobButton'
+import { ReportsStatus } from './ReportsStatus'
 
 export default async function SettingsPage() {
   await requireRole('manager')
@@ -98,6 +99,9 @@ export default async function SettingsPage() {
         </p>
         <TriggerJobButton />
       </div>
+
+      {/* Estado de reportes */}
+      <ReportsStatus />
     </div>
   )
 }

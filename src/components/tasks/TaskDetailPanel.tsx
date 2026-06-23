@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -11,20 +11,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   formatDate,
   getInitials,
   STATUS_LABELS,
   STATUS_COLORS,
 } from '@/lib/utils/formatting'
 import { cn } from '@/lib/utils'
-import { Calendar, Building2, User2, Tag, Bot, PenLine } from 'lucide-react'
+import { Calendar, Building2, Tag, Bot, PenLine, History, StickyNote } from 'lucide-react'
 import type { TaskWithRelations, TaskStatus } from '@/types'
 
 interface TaskDetailPanelProps {
@@ -45,30 +38,69 @@ export function TaskDetailPanel({
   onAssigneeChange,
 }: TaskDetailPanelProps) {
   const [saving, setSaving] = useState(false)
+  const [notes, setNotes] = useState('')
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
+  const [auditLog, setAuditLog] = useState<Array<{
+    id: string; field: string; oldValue: string | null; newValue: string; createdAt: string; userName: string
+  }>>([])
+
+  useEffect(() => {
+    if (!task) return
+    setNotes(task.notes ?? '')
+    setNotesSaved(false)
+    setAuditLog([])
+    fetch(`/api/tasks/${task.id}/audit`)
+      .then(r => r.json())
+      .then(setAuditLog)
+      .catch(() => {})
+  }, [task?.id])
 
   if (!task) return null
 
   const colors = STATUS_COLORS[task.status]
 
-  async function handleStatusChange(val: string | null) {
-    if (!task || !val) return
+  async function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    if (!task) return
     setSaving(true)
     try {
-      await onStatusChange(task.id, val as TaskStatus)
+      await onStatusChange(task.id, e.target.value as TaskStatus)
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleAssigneeChange(val: string | null) {
-    if (!task || !val) return
+  async function handleAssigneeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    if (!task) return
     setSaving(true)
     try {
-      await onAssigneeChange(task.id, val)
+      await onAssigneeChange(task.id, e.target.value)
     } finally {
       setSaving(false)
     }
   }
+
+  async function handleSaveNotes() {
+    if (!task) return
+    setNotesSaving(true)
+    try {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes }),
+      })
+      setNotesSaved(true)
+      setTimeout(() => setNotesSaved(false), 2000)
+    } finally {
+      setNotesSaving(false)
+    }
+  }
+
+  const selectClass = cn(
+    'w-full h-9 text-sm border border-[#E2E8F0] rounded-md px-2 bg-white text-[#0F172A]',
+    'focus:outline-none focus:border-[#1E40AF] cursor-pointer',
+    saving && 'opacity-50 pointer-events-none'
+  )
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -160,17 +192,12 @@ export function TaskDetailPanel({
             <p className="text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
               Estado
             </p>
-            <Select value={task.status} onValueChange={handleStatusChange} disabled={saving}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="in_progress">En progreso</SelectItem>
-                <SelectItem value="completed">Completado</SelectItem>
-                <SelectItem value="overdue">Vencido</SelectItem>
-              </SelectContent>
-            </Select>
+            <select value={task.status} onChange={handleStatusChange} className={selectClass}>
+              <option value="pending">Pendiente</option>
+              <option value="in_progress">En progreso</option>
+              <option value="completed">Completado</option>
+              <option value="overdue">Vencido</option>
+            </select>
           </div>
 
           {/* Reasignar */}
@@ -178,39 +205,76 @@ export function TaskDetailPanel({
             <p className="text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
               Asignada a
             </p>
-            <Select
-              value={task.assignedTo.id}
-              onValueChange={handleAssigneeChange}
-              disabled={saving}
-            >
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {advisors.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#DBEAFE] flex items-center justify-center">
-                        <span className="text-[9px] font-semibold text-[#1E40AF]">
-                          {getInitials(a.name)}
-                        </span>
-                      </div>
-                      {a.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select value={task.assignedTo.id} onChange={handleAssigneeChange} className={selectClass}>
+              {advisors.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {getInitials(a.name)} — {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Notas */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <StickyNote className="h-3.5 w-3.5 text-[#64748B]" />
+              <p className="text-xs font-medium text-[#64748B] uppercase tracking-wide">
+                Notas y observaciones
+              </p>
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => { setNotes(e.target.value); setNotesSaved(false) }}
+              rows={4}
+              placeholder="Agrega observaciones sobre esta tarea..."
+              className="w-full text-sm border border-[#E2E8F0] rounded-md px-3 py-2 bg-white text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1E40AF] resize-none"
+            />
+            <div className="flex items-center justify-end gap-2 mt-1.5">
+              {notesSaved && (
+                <span className="text-xs text-green-600">Guardado</span>
+              )}
+              <Button
+                size="sm"
+                className="h-7 text-xs bg-[#1E40AF] text-white hover:bg-[#1E3A8A]"
+                onClick={handleSaveNotes}
+                disabled={notesSaving}
+              >
+                {notesSaving ? 'Guardando...' : 'Guardar nota'}
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Audit log */}
         <div className="pt-4 border-t border-[#E2E8F0]">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-xs"
-            onClick={onClose}
-          >
+          <div className="flex items-center gap-1.5 mb-3">
+            <History className="h-3.5 w-3.5 text-[#64748B]" />
+            <p className="text-xs font-medium text-[#64748B] uppercase tracking-wide">Historial</p>
+          </div>
+          {auditLog.length === 0 ? (
+            <p className="text-xs text-[#94A3B8] italic">Sin cambios registrados</p>
+          ) : (
+            <div className="space-y-2">
+              {auditLog.map((log) => (
+                <div key={log.id} className="flex gap-2 text-xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#1E40AF] mt-1.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-[#0F172A] font-medium">{log.userName}</span>
+                    {log.field === 'status' ? (
+                      <span className="text-[#64748B]"> cambió estado: <span className="font-medium">{log.oldValue ?? '—'}</span> → <span className="font-medium text-[#1E40AF]">{log.newValue}</span></span>
+                    ) : (
+                      <span className="text-[#64748B]"> reasignó: <span className="font-medium">{log.oldValue ?? '—'}</span> → <span className="font-medium text-[#1E40AF]">{log.newValue}</span></span>
+                    )}
+                    <p className="text-[#94A3B8] mt-0.5">{new Date(log.createdAt).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="pt-4 border-t border-[#E2E8F0] mt-4">
+          <Button variant="outline" size="sm" className="w-full text-xs" onClick={onClose}>
             Cerrar
           </Button>
         </div>

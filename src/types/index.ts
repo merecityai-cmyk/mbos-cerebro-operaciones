@@ -19,6 +19,7 @@ export interface TaskWithRelations {
   dueDate: string | null
   conversationId: string | null
   ghlTaskId: string | null
+  notes: string | null
   assignedAt: Date
   completedAt: Date | null
   createdAt: Date

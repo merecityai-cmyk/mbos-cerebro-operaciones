@@ -2,6 +2,14 @@ import Anthropic from '@anthropic-ai/sdk'
 import { buildTaskExtractionPrompt } from './prompts'
 import type { ConversationAnalysisResult } from '@/types/ai'
 
+export interface TokenUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheCreationTokens: number
+  cacheReadTokens: number
+  model: string
+}
+
 // Lazy init — evita instanciar antes de que dotenv cargue las variables
 let _client: Anthropic | null = null
 function getClient(): Anthropic {
@@ -30,21 +38,23 @@ Reglas estrictas:
 export async function analyzeConversation(
   clientName: string,
   conversationText: string
-): Promise<ConversationAnalysisResult> {
+): Promise<ConversationAnalysisResult & { tokenUsage: TokenUsage }> {
+  const MODEL = 'claude-sonnet-4-6'
+  const emptyUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, model: MODEL }
+
   if (!conversationText || conversationText.trim().length < 20) {
-    return { tasks: [] }
+    return { tasks: [], tokenUsage: emptyUsage }
   }
 
   const userPrompt = buildTaskExtractionPrompt(clientName, conversationText)
 
   const message = await getClient().messages.create({
-    model: 'claude-sonnet-4-6',
+    model: MODEL,
     max_tokens: 2048,
     system: [
       {
         type: 'text',
         text: SYSTEM_PROMPT,
-        // Cache control: el system prompt es idéntico en todos los clientes del mismo job
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -59,7 +69,20 @@ export async function analyzeConversation(
   const rawText =
     message.content[0].type === 'text' ? message.content[0].text : ''
 
-  return parseTaskExtractionResponse(rawText)
+  const usage = message.usage as Anthropic.Usage & {
+    cache_creation_input_tokens?: number
+    cache_read_input_tokens?: number
+  }
+
+  const tokenUsage: TokenUsage = {
+    inputTokens: usage.input_tokens ?? 0,
+    outputTokens: usage.output_tokens ?? 0,
+    cacheCreationTokens: usage.cache_creation_input_tokens ?? 0,
+    cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+    model: MODEL,
+  }
+
+  return { ...parseTaskExtractionResponse(rawText), tokenUsage }
 }
 
 /**

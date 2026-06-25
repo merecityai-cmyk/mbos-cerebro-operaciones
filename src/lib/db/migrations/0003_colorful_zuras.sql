@@ -1,0 +1,1 @@
+ALTER TABLE "weekly_reports" ADD CONSTRAINT "weekly_reports_client_week_idx" UNIQUE("client_id","week_start");

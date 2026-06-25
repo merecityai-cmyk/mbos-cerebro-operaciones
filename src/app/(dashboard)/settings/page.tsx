@@ -6,6 +6,7 @@ import { TriggerJobButton } from './TriggerJobButton'
 import { ReportsStatus } from './ReportsStatus'
 import { ClientsManager } from './ClientsManager'
 import { UsersManager } from './UsersManager'
+import { TokenUsagePanel } from './TokenUsagePanel'
 
 export default async function SettingsPage() {
   const session = await requireRole('manager')
@@ -91,6 +92,9 @@ export default async function SettingsPage() {
       </div>
 
       <ReportsStatus />
+
+      {/* Consumo de tokens IA */}
+      <TokenUsagePanel />
     </div>
   )
 }

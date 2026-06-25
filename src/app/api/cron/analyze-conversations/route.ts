@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { clients, users, tasks, conversationSnapshots } from '@/lib/db/schema'
-import { getContactDisplayName } from '@/lib/ghl/contacts'
+import { clients, users, tasks, conversationSnapshots, aiTokenUsage } from '@/lib/db/schema'
+import { getContactDisplayName, getUnitedDraftClients, UNITED_DRAFT_CLIENT_TAG } from '@/lib/ghl/contacts'
 import { getContactConversation, getConversationMessages, formatMessagesForClaude } from '@/lib/ghl/conversations'
 import { createGHLTask } from '@/lib/ghl/tasks'
 import { analyzeConversation } from '@/lib/ai/analyze-conversation'
@@ -10,6 +10,14 @@ import { routeTaskSync } from '@/lib/routing/task-router'
 import { GHLError } from '@/lib/ghl/client'
 
 const LOCATION_ID = process.env.GHL_LOCATION_ID!
+
+// Prefijos válidos para auto-registrar nuevos grupos GHL
+const VALID_PREFIXES = ['adm', 'ud- az', 'ud-az', 'udt- az', 'udt-az']
+
+function hasValidPrefix(name: string): boolean {
+  const lower = name.toLowerCase().trim()
+  return VALID_PREFIXES.some(prefix => lower.startsWith(prefix))
+}
 
 // ─── Auth del cron ─────────────────────────────────────────────────────────
 
@@ -58,7 +66,10 @@ export async function POST(req: NextRequest) {
         .map((u) => [u.ghlUserId!, u])
     )
 
-    // 3. Cargar clientes directamente desde la DB (ya tienen ghlContactId real)
+    // 3. Auto-discovery: sincronizar nuevos clientes GHL al sistema
+    await syncNewGHLClients(allUsers, usersByName)
+
+    // 4. Cargar clientes directamente desde la DB (ya tienen ghlContactId real)
     console.log('[CRON] Cargando clientes desde DB...')
     const dbClients = await db
       .select()
@@ -125,6 +136,17 @@ export async function POST(req: NextRequest) {
         // Analizar con Claude
         const formatted = formatMessagesForClaude(newMessages)
         const analysis = await analyzeConversation(contactName, formatted)
+
+        // Registrar uso de tokens
+        await db.insert(aiTokenUsage).values({
+          jobType: 'analyze-conversations',
+          clientId: dbClient.id,
+          inputTokens: analysis.tokenUsage.inputTokens,
+          outputTokens: analysis.tokenUsage.outputTokens,
+          cacheCreationTokens: analysis.tokenUsage.cacheCreationTokens,
+          cacheReadTokens: analysis.tokenUsage.cacheReadTokens,
+          model: analysis.tokenUsage.model,
+        }).catch(err => console.error('[CRON] Error registrando tokens:', err))
 
         console.log(`[CRON] ${contactName}: ${analysis.tasks.length} tarea(s) detectada(s)`)
 
@@ -232,6 +254,44 @@ export async function POST(req: NextRequest) {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+async function syncNewGHLClients(
+  allUsers: Array<{ id: string; name: string; role: string }>,
+  usersByName: Record<string, string>
+) {
+  try {
+    const ghlContacts = await getUnitedDraftClients(LOCATION_ID)
+    const dbClients = await db.select({ ghlContactId: clients.ghlContactId }).from(clients)
+    const existingIds = new Set(dbClients.map(c => c.ghlContactId))
+
+    // Usar el primer manager como asignado por defecto para nuevos clientes
+    const defaultAdvisorId =
+      allUsers.find(u => u.role === 'manager')?.id ??
+      allUsers[0]?.id
+
+    if (!defaultAdvisorId) return
+
+    for (const contact of ghlContacts) {
+      if (existingIds.has(contact.id)) continue
+
+      const displayName = getContactDisplayName(contact)
+      if (!hasValidPrefix(displayName)) {
+        console.log(`[CRON] Nuevo contacto GHL ignorado (sin prefijo válido): "${displayName}"`)
+        continue
+      }
+
+      await db.insert(clients).values({
+        name: displayName,
+        ghlContactId: contact.id,
+        assignedAdvisorId: defaultAdvisorId,
+      }).onConflictDoNothing()
+
+      console.log(`[CRON] ✓ Nuevo cliente auto-registrado: "${displayName}"`)
+    }
+  } catch (err) {
+    console.error('[CRON] Error en auto-discovery de clientes:', err instanceof Error ? err.message : err)
+  }
+}
 
 async function upsertSnapshot(
   clientId: string,

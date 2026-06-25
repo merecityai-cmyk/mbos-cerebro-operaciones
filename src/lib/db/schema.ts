@@ -9,6 +9,7 @@ import {
   date,
   jsonb,
   pgEnum,
+  unique,
 } from 'drizzle-orm/pg-core'
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -132,6 +133,20 @@ export const weeklyReports = pgTable('weekly_reports', {
   keyTopics: jsonb('key_topics').$type<string[]>().default([]),
   generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  clientWeekUnique: unique('weekly_reports_client_week_idx').on(t.clientId, t.weekStart),
+}))
+
+export const aiTokenUsage = pgTable('ai_token_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  jobType: varchar('job_type', { length: 50 }).notNull(),
+  clientId: uuid('client_id').references(() => clients.id),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+  cacheCreationTokens: integer('cache_creation_tokens').notNull().default(0),
+  cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
+  model: varchar('model', { length: 100 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -146,3 +161,4 @@ export type TaskRoutingRule = typeof taskRoutingRules.$inferSelect
 export type WeeklyReport = typeof weeklyReports.$inferSelect
 export type ConversationSnapshot = typeof conversationSnapshots.$inferSelect
 export type TaskAuditLog = typeof taskAuditLog.$inferSelect
+export type AiTokenUsage = typeof aiTokenUsage.$inferSelect

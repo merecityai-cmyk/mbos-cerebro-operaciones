@@ -22,6 +22,20 @@
       "when": 1782241758540,
       "tag": "0002_clumsy_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782250754166,
+      "tag": "0003_colorful_zuras",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782411636735,
+      "tag": "0004_red_vertigo",
+      "breakpoints": true
     }
   ]
 }

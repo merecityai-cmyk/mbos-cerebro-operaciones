@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useOptimistic, useCallback } from 'react'
+import { Plus } from 'lucide-react'
 import { TaskColumn } from './TaskColumn'
 import { TaskFilters, type DatePeriod } from './TaskFilters'
 import { TaskDetailPanel } from './TaskDetailPanel'
+import { AddTaskDialog } from './AddTaskDialog'
 import type { TaskWithRelations, TaskStatus } from '@/types'
 
 const COLUMNS: TaskStatus[] = ['pending', 'in_progress', 'completed', 'overdue']
@@ -61,13 +63,21 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
   const [customDateFrom, setCustomDateFrom] = useState('')
   const [customDateTo, setCustomDateTo] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [addTaskOpen, setAddTaskOpen] = useState(false)
 
   const [optimisticTasks, updateOptimistic] = useOptimistic(
     initialTasks,
     (state: TaskWithRelations[], update: Partial<TaskWithRelations> & { id: string }) => {
+      // If the task doesn't exist yet, add it; otherwise update it
+      const exists = state.some(t => t.id === update.id)
+      if (!exists) return [...state, { ...update } as TaskWithRelations]
       return state.map((t) => t.id === update.id ? { ...t, ...update } : t)
     }
   )
+
+  const handleTaskCreated = useCallback((task: TaskWithRelations) => {
+    updateOptimistic(task)
+  }, [updateOptimistic])
 
   const filteredTasks = optimisticTasks.filter((t) => {
     const matchAdvisor = !selectedAdvisorId || t.assignedTo.id === selectedAdvisorId
@@ -137,22 +147,33 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
 
   return (
     <div className="space-y-4">
-      <TaskFilters
-        advisors={advisors}
-        clients={clients}
-        selectedAdvisorId={selectedAdvisorId}
-        selectedClientId={selectedClientId}
-        selectedPeriod={selectedPeriod}
-        customDateFrom={customDateFrom}
-        customDateTo={customDateTo}
-        searchQuery={searchQuery}
-        onAdvisorChange={setSelectedAdvisorId}
-        onClientChange={setSelectedClientId}
-        onPeriodChange={setSelectedPeriod}
-        onCustomDateFromChange={setCustomDateFrom}
-        onCustomDateToChange={setCustomDateTo}
-        onSearchChange={setSearchQuery}
-      />
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <TaskFilters
+            advisors={advisors}
+            clients={clients}
+            selectedAdvisorId={selectedAdvisorId}
+            selectedClientId={selectedClientId}
+            selectedPeriod={selectedPeriod}
+            customDateFrom={customDateFrom}
+            customDateTo={customDateTo}
+            searchQuery={searchQuery}
+            onAdvisorChange={setSelectedAdvisorId}
+            onClientChange={setSelectedClientId}
+            onPeriodChange={setSelectedPeriod}
+            onCustomDateFromChange={setCustomDateFrom}
+            onCustomDateToChange={setCustomDateTo}
+            onSearchChange={setSearchQuery}
+          />
+        </div>
+        <button
+          onClick={() => setAddTaskOpen(true)}
+          className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium bg-[#1E40AF] text-white rounded-md hover:bg-[#1E3A8A] transition-colors shrink-0"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Nueva tarea
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         {COLUMNS.map((status) => (
@@ -172,6 +193,14 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
         onClose={() => setPanelOpen(false)}
         onStatusChange={handleStatusChange}
         onAssigneeChange={handleAssigneeChange}
+      />
+
+      <AddTaskDialog
+        open={addTaskOpen}
+        onClose={() => setAddTaskOpen(false)}
+        advisors={advisors}
+        clients={clients}
+        onCreated={handleTaskCreated}
       />
     </div>
   )

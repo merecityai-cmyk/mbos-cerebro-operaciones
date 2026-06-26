@@ -87,11 +87,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Procesar cada cliente — try/catch individual para resiliencia
-    for (const dbClient of dbClients) {
+    for (let i = 0; i < dbClients.length; i++) {
+      const dbClient = dbClients[i]
       const contactName = dbClient.name
 
+      // Respetar rate limits de GHL: 1.5s entre clientes, 5s cada 10 clientes
+      if (i > 0) {
+        await new Promise(r => setTimeout(r, i % 10 === 0 ? 5000 : 1500))
+      }
+
       try {
-        console.log(`[CRON] Procesando: ${contactName} (${dbClient.ghlContactId})`)
+        console.log(`[CRON] Procesando [${i + 1}/${dbClients.length}]: ${contactName}`)
 
         // Obtener snapshot anterior
         const [snapshot] = await db

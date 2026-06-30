@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { clients, users, tasks, conversationSnapshots, aiTokenUsage } from '@/lib/db/schema'
@@ -45,9 +45,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Responder inmediatamente para evitar timeout del proxy de Railway
-  // El procesamiento continúa en background (Node.js event loop)
-  runJob().catch(err => console.error('[CRON] Error fatal en background:', err))
+  // after() garantiza que Next.js mantiene el job vivo aunque la respuesta ya fue enviada
+  after(async () => {
+    await runJob().catch(err => console.error('[CRON] Error fatal en background:', err))
+  })
   return NextResponse.json({ status: 'started', message: 'Job lanzado en background' }, { status: 202 })
 }
 

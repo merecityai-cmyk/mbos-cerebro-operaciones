@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Responder inmediatamente para evitar timeout del proxy de Railway
+  // El procesamiento continúa en background (Node.js event loop)
+  runJob().catch(err => console.error('[CRON] Error fatal en background:', err))
+  return NextResponse.json({ status: 'started', message: 'Job lanzado en background' }, { status: 202 })
+}
+
+async function runJob() {
   const startTime = Date.now()
   const result: JobResult = {
     processed: 0,
@@ -79,11 +86,8 @@ export async function POST(req: NextRequest) {
     console.log(`[CRON] ${dbClients.length} clientes a procesar`)
 
     if (dbClients.length === 0) {
-      return NextResponse.json({
-        ...result,
-        message: 'No hay clientes con ghlContactId en la DB',
-        executionMs: Date.now() - startTime,
-      })
+      console.log('[CRON] No hay clientes con ghlContactId en la DB')
+      return
     }
 
     // 4. Procesar cada cliente — try/catch individual para resiliencia
@@ -243,10 +247,7 @@ export async function POST(req: NextRequest) {
   } catch (fatalErr) {
     const errMsg = fatalErr instanceof Error ? fatalErr.message : String(fatalErr)
     console.error('[CRON] Error fatal en job:', errMsg)
-    return NextResponse.json(
-      { error: 'Job failed', detail: errMsg, ...result },
-      { status: 500 }
-    )
+    return
   }
 
   result.executionMs = Date.now() - startTime
@@ -255,8 +256,6 @@ export async function POST(req: NextRequest) {
     `[CRON] Completado en ${result.executionMs}ms — ` +
     `procesados: ${result.processed}, tareas: ${result.tasksCreated}, errores: ${result.errors.length}`
   )
-
-  return NextResponse.json(result)
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

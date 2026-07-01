@@ -33,42 +33,40 @@ export async function getContactById(
   return data.contact ?? null
 }
 
+interface GHLContactsSearchPostResponse {
+  contacts: GHLContact[]
+  total?: number
+  traceId?: string
+}
+
 /**
- * Obtiene TODOS los contactos con la etiqueta "cliente united" en la location.
- * GHL v2 no filtra por tag en GET /contacts/ — usamos el endpoint de búsqueda
- * por query vacío y filtramos client-side por etiqueta.
- *
- * Estos son los únicos contactos que el job diario debe procesar.
+ * Obtiene contactos con la etiqueta "cliente united" usando el endpoint POST /contacts/search.
+ * Mucho más eficiente que paginar todos los contactos y filtrar client-side.
  */
 export async function getUnitedDraftClients(
   locationId: string
 ): Promise<GHLContact[]> {
   const allContacts: GHLContact[] = []
-  let startAfterId: string | undefined
+  let page = 1
 
   while (true) {
-    const params: Record<string, string | number | boolean | undefined> = {
-      locationId,
-      limit: 100,
-      ...(startAfterId ? { startAfterId } : {}),
-    }
+    const data = await ghlFetch<GHLContactsSearchPostResponse>('/contacts/search', {
+      method: 'POST',
+      body: {
+        locationId,
+        pageLimit: 100,
+        page,
+        filters: [
+          { field: 'tags', operator: 'contains', value: UNITED_DRAFT_CLIENT_TAG },
+        ],
+      },
+    })
 
-    const data = await ghlFetch<GHLContactsSearchResponse>('/contacts/', { params })
     const batch = data.contacts ?? []
+    allContacts.push(...batch)
 
-    // Filtrar client-side: solo contactos con la etiqueta "cliente united"
-    const tagged = batch.filter(
-      (c) =>
-        Array.isArray(c.tags) &&
-        c.tags.some(
-          (t: string) => t.toLowerCase() === UNITED_DRAFT_CLIENT_TAG.toLowerCase()
-        )
-    )
-    allContacts.push(...tagged)
-
-    // GHL pagina con startAfterId del último elemento
-    if (batch.length < 100 || !data.meta?.nextPage) break
-    startAfterId = data.meta.startAfterId ?? batch[batch.length - 1].id
+    if (batch.length < 100) break
+    page++
   }
 
   return allContacts

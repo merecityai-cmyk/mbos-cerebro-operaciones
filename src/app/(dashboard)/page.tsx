@@ -1,11 +1,12 @@
 import { requireSession } from '@/lib/auth/helpers'
 import { db } from '@/lib/db'
-import { tasks, clients, users, weeklyReports } from '@/lib/db/schema'
-import { eq, and, gte, lt, count, avg, desc } from 'drizzle-orm'
+import { tasks, clients, users, weeklyReports, kpiMonthlyRecords, kpiChecklistItems } from '@/lib/db/schema'
+import { eq, and, gte, lt, count, avg, desc, inArray } from 'drizzle-orm'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { AlertBanner } from '@/components/dashboard/AlertBanner'
 import { getColombiaDate, startOfDay, startOfWeek, endOfWeek, subtractDays, toDateString } from '@/lib/utils/dates'
 import { formatDateShort } from '@/lib/utils/formatting'
+import { MONTH_NAMES } from '@/lib/kpi/phases'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -70,6 +71,32 @@ export default async function DashboardPage() {
 
   const maxWeekly = Math.max(...weeklyData.map((w) => w.total), 1)
 
+  // ── KPI resumen del mes ───────────────────────────────────────────────────
+
+  const kpiYear = now.getFullYear()
+  const kpiMonth = now.getMonth() + 1
+
+  const allClientIds = (await db.select({ id: clients.id }).from(clients)).map((c) => c.id)
+  const kpiRecords = allClientIds.length > 0
+    ? await db
+        .select()
+        .from(kpiMonthlyRecords)
+        .where(and(
+          inArray(kpiMonthlyRecords.clientId, allClientIds),
+          eq(kpiMonthlyRecords.year, kpiYear),
+          eq(kpiMonthlyRecords.month, kpiMonth),
+        ))
+    : []
+
+  const kpiRecordIds = kpiRecords.map((r) => r.id)
+  const kpiItems = kpiRecordIds.length > 0
+    ? await db.select().from(kpiChecklistItems).where(inArray(kpiChecklistItems.recordId, kpiRecordIds))
+    : []
+
+  const kpiTotal = kpiItems.length
+  const kpiCompleted = kpiItems.filter((i) => i.status === 'completed').length
+  const kpiAvgPct = kpiTotal > 0 ? Math.round((kpiCompleted / kpiTotal) * 100) : null
+
   // ── Tareas urgentes ───────────────────────────────────────────────────────
 
   const urgentTasks = await db
@@ -130,6 +157,33 @@ export default async function DashboardPage() {
           delta={avgScore ? 'Últimos 30 días' : 'Sin reportes aún'}
           accent="amber"
         />
+      </div>
+
+      {/* KPI del mes */}
+      <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-semibold text-[#0F172A]">KPI Empresas — {MONTH_NAMES[kpiMonth - 1]}</p>
+            <p className="text-xs text-[#64748B]">
+              {kpiRecords.length} empresas con registro · {kpiCompleted}/{kpiTotal} actividades completadas
+            </p>
+          </div>
+          <Link href="/kpi" className="text-xs text-[#1E40AF] hover:underline">Ver detalle →</Link>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-3 bg-[#E2E8F0] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${kpiAvgPct ?? 0}%`,
+                backgroundColor: (kpiAvgPct ?? 0) >= 80 ? '#059669' : (kpiAvgPct ?? 0) >= 50 ? '#D97706' : '#DC2626',
+              }}
+            />
+          </div>
+          <span className="text-lg font-bold text-[#0F172A] w-12 text-right">
+            {kpiAvgPct !== null ? `${kpiAvgPct}%` : '—'}
+          </span>
+        </div>
       </div>
 
       {/* Fila inferior */}

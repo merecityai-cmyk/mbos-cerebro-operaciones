@@ -6,7 +6,10 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 const patchSchema = z.object({
-  assignedAdvisorId: z.string().uuid(),
+  assignedAdvisorId: z.string().uuid().optional(),
+  hasNomina: z.boolean().optional(),
+  nominaCycle: z.number().int().nullable().optional(),
+  hasDocumentosSoporte: z.boolean().optional(),
 })
 
 export async function PATCH(
@@ -23,9 +26,15 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
+  const updates: Partial<typeof clients.$inferInsert> = { updatedAt: new Date() }
+  if (parsed.data.assignedAdvisorId) updates.assignedAdvisorId = parsed.data.assignedAdvisorId
+  if (parsed.data.hasNomina !== undefined) updates.hasNomina = parsed.data.hasNomina
+  if (parsed.data.nominaCycle !== undefined) updates.nominaCycle = parsed.data.nominaCycle
+  if (parsed.data.hasDocumentosSoporte !== undefined) updates.hasDocumentosSoporte = parsed.data.hasDocumentosSoporte
+
   await db
     .update(clients)
-    .set({ assignedAdvisorId: parsed.data.assignedAdvisorId, updatedAt: new Date() })
+    .set(updates)
     .where(eq(clients.id, id))
 
   return NextResponse.json({ success: true })

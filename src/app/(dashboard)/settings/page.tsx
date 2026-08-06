@@ -30,6 +30,9 @@ export default async function SettingsPage() {
       id: clients.id,
       name: clients.name,
       advisorId: clients.assignedAdvisorId,
+      hasNomina: clients.hasNomina,
+      nominaCycle: clients.nominaCycle,
+      hasDocumentosSoporte: clients.hasDocumentosSoporte,
     })
       .from(clients)
       .orderBy(clients.name),

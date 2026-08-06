@@ -10,6 +10,7 @@ import {
   jsonb,
   pgEnum,
   unique,
+  boolean,
 } from 'drizzle-orm/pg-core'
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -47,6 +48,9 @@ export const clients = pgTable('clients', {
   assignedAdvisorId: uuid('assigned_advisor_id')
     .notNull()
     .references(() => users.id),
+  hasNomina: boolean('has_nomina').notNull().default(false),
+  nominaCycle: integer('nomina_cycle'), // 10, 15, or 30 days
+  hasDocumentosSoporte: boolean('has_documentos_soporte').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
@@ -137,6 +141,37 @@ export const weeklyReports = pgTable('weekly_reports', {
   clientWeekUnique: unique('weekly_reports_client_week_idx').on(t.clientId, t.weekStart),
 }))
 
+// ─── KPI ──────────────────────────────────────────────────────────────────────
+
+export const kpiItemStatusEnum = pgEnum('kpi_item_status', ['pending', 'in_progress', 'completed'])
+
+export const kpiMonthlyRecords = pgTable('kpi_monthly_records', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  month: integer('month').notNull(), // 1–12
+  observations: text('observations'),
+  closedAt: timestamp('closed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  clientMonthUnique: unique('kpi_records_client_month_idx').on(t.clientId, t.year, t.month),
+}))
+
+export const kpiChecklistItems = pgTable('kpi_checklist_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  recordId: uuid('record_id').notNull().references(() => kpiMonthlyRecords.id, { onDelete: 'cascade' }),
+  phase: varchar('phase', { length: 50 }).notNull(),
+  itemKey: varchar('item_key', { length: 100 }).notNull(),
+  status: kpiItemStatusEnum('status').notNull().default('pending'),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedById: uuid('completed_by_id').references(() => users.id),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+
 export const aiTokenUsage = pgTable('ai_token_usage', {
   id: uuid('id').primaryKey().defaultRandom(),
   jobType: varchar('job_type', { length: 50 }).notNull(),
@@ -162,3 +197,5 @@ export type WeeklyReport = typeof weeklyReports.$inferSelect
 export type ConversationSnapshot = typeof conversationSnapshots.$inferSelect
 export type TaskAuditLog = typeof taskAuditLog.$inferSelect
 export type AiTokenUsage = typeof aiTokenUsage.$inferSelect
+export type KpiMonthlyRecord = typeof kpiMonthlyRecords.$inferSelect
+export type KpiChecklistItem = typeof kpiChecklistItems.$inferSelect

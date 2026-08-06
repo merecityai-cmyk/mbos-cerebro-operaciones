@@ -8,6 +8,7 @@ import {
   Users,
   FileText,
   Settings,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserMenu } from './UserMenu'
@@ -33,6 +34,11 @@ const NAV_ITEMS = [
     label: 'Reportes',
     href: '/reports',
     icon: FileText,
+  },
+  {
+    label: 'KPI Empresas',
+    href: '/kpi',
+    icon: BarChart3,
   },
 ]
 

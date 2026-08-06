@@ -1,6 +1,5 @@
 import { requireSession } from '@/lib/auth/helpers'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
+import { DashboardShell } from '@/components/layout/DashboardShell'
 import type { SessionUser } from '@/types'
 
 export default async function DashboardLayout({
@@ -17,18 +16,5 @@ export default async function DashboardLayout({
     role: session.user.role,
   }
 
-  return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      {/* Sidebar — fijo en desktop */}
-      <Sidebar user={user} />
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
-  )
+  return <DashboardShell user={user}>{children}</DashboardShell>
 }

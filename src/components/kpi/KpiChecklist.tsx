@@ -102,12 +102,12 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
     <div className="space-y-6">
       {/* Progress bar */}
       <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <div>
             <span className="text-2xl font-bold text-[#0F172A]">{completionPct}%</span>
             <span className="text-sm text-[#64748B] ml-2">completado</span>
           </div>
-          <div className="flex gap-4 text-xs text-[#64748B]">
+          <div className="flex gap-3 text-xs text-[#64748B] flex-wrap">
             <span className="flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5 text-[#059669]" />
               {completed} completadas

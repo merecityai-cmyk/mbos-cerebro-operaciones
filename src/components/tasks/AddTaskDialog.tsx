@@ -83,12 +83,12 @@ export function AddTaskDialog({ open, onClose, advisors, clients, onCreated }: A
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
 
-      {/* Panel */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
+      {/* Panel — bottom sheet on mobile, centered modal on sm+ */}
+      <div className="relative bg-white rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md max-h-[92dvh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
           <h2 className="text-sm font-semibold text-[#0F172A]">Nueva tarea manual</h2>
           <button onClick={handleClose} className="p-1 text-[#64748B] hover:text-[#0F172A] rounded">
@@ -123,7 +123,7 @@ export function AddTaskDialog({ open, onClose, advisors, clients, onCreated }: A
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-[#64748B] block mb-1.5">Empresa *</label>
               <select

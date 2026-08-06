@@ -132,7 +132,7 @@ export default async function DashboardPage() {
       <AlertBanner count={overdueCount.count} />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <KPICard
           label="Tareas creadas hoy"
           value={todayCount.count}
@@ -187,7 +187,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Fila inferior */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* Gráfico de barras (últimas 4 semanas) */}
         <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
           <p className="text-sm font-semibold text-[#0F172A] mb-4">Tareas por semana</p>

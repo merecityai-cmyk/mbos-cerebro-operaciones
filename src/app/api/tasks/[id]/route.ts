@@ -12,6 +12,8 @@ const patchSchema = z.object({
   assignedToId: z.string().uuid().optional(),
   dueDate: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().nullable().optional(),
 })
 
 export async function GET(
@@ -63,7 +65,7 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { status, assignedToId, dueDate, notes } = parsed.data
+  const { status, assignedToId, dueDate, notes, title, description } = parsed.data
 
   // Obtener tarea actual para el sync con GHL
   const [currentTask] = await db
@@ -84,6 +86,8 @@ export async function PATCH(
   if (assignedToId !== undefined) updateData.assignedToId = assignedToId
   if (dueDate !== undefined) updateData.dueDate = dueDate
   if (notes !== undefined) updateData.notes = notes
+  if (title !== undefined) updateData.title = title
+  if (description !== undefined) updateData.description = description
 
   // Actualizar en DB
   const [updated] = await db

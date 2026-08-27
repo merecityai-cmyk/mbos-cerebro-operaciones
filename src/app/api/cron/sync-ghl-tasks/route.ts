@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, isNotNull, ne, eq } from 'drizzle-orm'
+import { and, isNotNull, ne, eq, lt, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { tasks, clients } from '@/lib/db/schema'
 import { getGHLTask, mapGHLStatusToLocal } from '@/lib/ghl/tasks'
@@ -58,6 +58,15 @@ export async function POST(req: NextRequest) {
       result.errors.push(`Tarea ${task.id}: ${msg}`)
     }
   }
+
+  // Marcar tareas vencidas (dueDate < hoy y aún pending/in_progress)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const overdueMark = await db
+    .update(tasks)
+    .set({ status: 'overdue', updatedAt: new Date() })
+    .where(and(isNotNull(tasks.dueDate), lt(tasks.dueDate, todayStr), or(eq(tasks.status, 'pending'), eq(tasks.status, 'in_progress'))))
+    .returning({ id: tasks.id })
+  if (overdueMark.length > 0) console.log(`[CRON] ${overdueMark.length} tareas marcadas como vencidas`)
 
   result.executionMs = Date.now() - startTime
   console.log(`[CRON] Sync completado — actualizadas: ${result.updated}/${result.synced}`)

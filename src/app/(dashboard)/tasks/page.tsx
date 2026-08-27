@@ -38,7 +38,8 @@ export default async function TasksPage() {
     .from(tasks)
     .innerJoin(clients, eq(tasks.clientId, clients.id))
     .innerJoin(users, eq(tasks.assignedToId, users.id))
-    .orderBy(desc(tasks.createdAt))
+    // Primero vencidas, luego por fecha límite más próxima, luego por creación
+    .orderBy(tasks.dueDate, desc(tasks.createdAt))
 
   const advisors = await db
     .select({ id: users.id, name: users.name })

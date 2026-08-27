@@ -39,7 +39,7 @@ export async function GET() {
     .from(tasks)
     .innerJoin(clients, eq(tasks.clientId, clients.id))
     .innerJoin(users, eq(tasks.assignedToId, users.id))
-    .orderBy(desc(tasks.createdAt))
+    .orderBy(tasks.dueDate, desc(tasks.createdAt))
 
   return NextResponse.json(rows)
 }

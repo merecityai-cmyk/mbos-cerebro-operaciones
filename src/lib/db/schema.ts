@@ -141,6 +141,19 @@ export const weeklyReports = pgTable('weekly_reports', {
   clientWeekUnique: unique('weekly_reports_client_week_idx').on(t.clientId, t.weekStart),
 }))
 
+// ─── Task Comments ────────────────────────────────────────────────────────────
+
+export const taskComments = pgTable('task_comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  taskId: uuid('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  content: text('content').notNull(),
+  driveLink: varchar('drive_link', { length: 1000 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export type TaskComment = typeof taskComments.$inferSelect
+
 // ─── KPI ──────────────────────────────────────────────────────────────────────
 
 export const kpiItemStatusEnum = pgEnum('kpi_item_status', ['pending', 'in_progress', 'completed'])

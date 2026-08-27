@@ -43,6 +43,13 @@
       "when": 1786032632908,
       "tag": "0005_nebulous_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787843392658,
+      "tag": "0006_volatile_scream",
+      "breakpoints": true
     }
   ]
 }

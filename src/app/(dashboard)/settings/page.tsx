@@ -7,6 +7,7 @@ import { ReportsStatus } from './ReportsStatus'
 import { ClientsManager } from './ClientsManager'
 import { UsersManager } from './UsersManager'
 import { TokenUsagePanel } from './TokenUsagePanel'
+import { SyncGroupsButton } from './SyncGroupsButton'
 
 export default async function SettingsPage() {
   const session = await requireRole('manager')
@@ -83,6 +84,15 @@ export default async function SettingsPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Sincronización manual de grupos GHL */}
+      <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-[#0F172A] mb-1">Sincronizar clientes desde GHL</h3>
+        <p className="text-xs text-[#64748B] mb-4">
+          Busca contactos con tag "cliente united" en GoHighLevel y añade los nuevos a la app.
+        </p>
+        <SyncGroupsButton />
       </div>
 
       {/* Ejecución manual */}

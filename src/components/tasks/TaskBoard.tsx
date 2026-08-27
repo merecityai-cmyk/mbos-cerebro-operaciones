@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useOptimistic, useCallback } from 'react'
-import { Plus } from 'lucide-react'
+import { useState, useOptimistic, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Plus, RefreshCw } from 'lucide-react'
 import { TaskColumn } from './TaskColumn'
 import { TaskFilters, type DatePeriod } from './TaskFilters'
 import { TaskDetailPanel } from './TaskDetailPanel'
@@ -55,7 +56,14 @@ interface TaskBoardProps {
 }
 
 export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
+  const router = useRouter()
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
+
+  // Auto-refresh every 30 seconds so other users' changes are visible without manual F5
+  useEffect(() => {
+    const interval = setInterval(() => router.refresh(), 30_000)
+    return () => clearInterval(interval)
+  }, [router])
   const [panelOpen, setPanelOpen] = useState(false)
   const [selectedAdvisorId, setSelectedAdvisorId] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)

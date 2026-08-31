@@ -43,5 +43,6 @@ export async function POST() {
     added.push(displayName)
   }
 
-  return NextResponse.json({ added, total: ghlContacts.length, new: added.length })
+  const skipped = ghlContacts.filter(c => existingIds.has(c.id)).length
+  return NextResponse.json({ added: added.length, skipped, total: ghlContacts.length, addedNames: added })
 }

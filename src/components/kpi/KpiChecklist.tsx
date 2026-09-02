@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useOptimistic, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { KPI_PHASES } from '@/lib/kpi/phases'
 import type { KpiChecklistItem } from '@/lib/db/schema'
 import { cn } from '@/lib/utils'
@@ -46,38 +45,29 @@ interface Props {
 }
 
 export function KpiChecklist({ recordId, items: initialItems, observations: initObs, phasesEnabled, stats: initStats }: Props) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const [observations, setObservations] = useState(initObs ?? '')
   const [savingObs, setSavingObs] = useState(false)
   const [obsMsg, setObsMsg] = useState<string | null>(null)
-
-  // Estado local — se actualiza tras confirmar con el servidor, evitando que
-  // useOptimistic resetee al valor viejo cuando termina la transición.
   const [items, setItems] = useState(initialItems)
+  const isPending = false
 
-  const [optimisticItems, updateOptimisticItems] = useOptimistic(
-    items,
-    (state, update: { id: string; status: KpiChecklistItem['status'] }) =>
-      state.map((item) => item.id === update.id ? { ...item, status: update.status } : item)
-  )
-
-  const total = optimisticItems.length
-  const completed = optimisticItems.filter((i) => i.status === 'completed').length
-  const inProgress = optimisticItems.filter((i) => i.status === 'in_progress').length
+  const total = items.length
+  const completed = items.filter((i) => i.status === 'completed').length
+  const inProgress = items.filter((i) => i.status === 'in_progress').length
   const completionPct = total > 0 ? Math.round((completed / total) * 100) : 0
 
-  async function toggleItem(item: KpiChecklistItem) {
+  function toggleItem(item: KpiChecklistItem) {
     const newStatus = STATUS_CYCLE[item.status]
-    startTransition(async () => {
-      updateOptimisticItems({ id: item.id, status: newStatus })
-      await fetch(`/api/kpi/items/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      })
-      // Actualizar estado local para que useOptimistic no resetee al valor viejo
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i))
+    // Actualizar inmediatamente en UI
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i))
+    // Guardar en servidor en segundo plano
+    fetch(`/api/kpi/items/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    }).catch(() => {
+      // Si falla, revertir
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: item.status } : i))
     })
   }
 
@@ -140,7 +130,7 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
 
       {/* Phases */}
       {visiblePhases.map((phase) => {
-        const phaseItems = optimisticItems.filter((i) => i.phase === phase.key)
+        const phaseItems = items.filter((i) => i.phase === phase.key)
         const phaseCompleted = phaseItems.filter((i) => i.status === 'completed').length
         const phasePct = phaseItems.length > 0 ? Math.round((phaseCompleted / phaseItems.length) * 100) : 0
 

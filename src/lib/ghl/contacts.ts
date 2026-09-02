@@ -23,13 +23,22 @@ interface GHLContactsSearchResponse {
 // La etiqueta que identifica clientes activos de United Draft en GHL
 export const UNITED_DRAFT_CLIENT_TAG = 'cliente united'
 
-// Prefijos que identifican grupos de clientes de United Draft en Merecity
-const ADM_PREFIXES = ['adm', 'ud- az', 'ud-az', 'udt- az', 'udt-az']
+// Prefijos que identifican grupos de clientes de United Draft en Merecity.
+// Fuente única de verdad: la usan también sync-groups y analyze-conversations.
+// 'ud-' cubre "UD- AZ", "UD-AZ" y "UD- Luisa"; 'udt-' cubre las variantes UDT-.
+export const CLIENT_PREFIXES = ['adm', 'ud-', 'udt-']
 
-function hasAdmPrefix(name: string): boolean {
+/**
+ * ¿El nombre del contacto corresponde a un grupo de cliente de United Draft?
+ * (empieza con ADM / UD- / UDT-)
+ */
+export function hasValidClientPrefix(name: string): boolean {
   const lower = name.toLowerCase().trim()
-  return ADM_PREFIXES.some(p => lower.startsWith(p))
+  return CLIENT_PREFIXES.some(p => lower.startsWith(p))
 }
+
+// Alias interno (compatibilidad con el uso previo en este módulo)
+const hasAdmPrefix = hasValidClientPrefix
 
 /**
  * Agrega el tag "cliente united" a un contacto en GHL/Merecity.

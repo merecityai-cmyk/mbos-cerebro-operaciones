@@ -2,16 +2,12 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { clients, users } from '@/lib/db/schema'
-import { getUnitedDraftClients, getContactDisplayName } from '@/lib/ghl/contacts'
+import { getUnitedDraftClients, getContactDisplayName, hasValidClientPrefix } from '@/lib/ghl/contacts'
 import { eq } from 'drizzle-orm'
 
 const LOCATION_ID = process.env.GHL_LOCATION_ID!
-const VALID_PREFIXES = ['adm', 'ud- az', 'ud-az', 'udt- az', 'udt-az']
 
-function hasValidPrefix(name: string): boolean {
-  const lower = name.toLowerCase().trim()
-  return VALID_PREFIXES.some(p => lower.startsWith(p))
-}
+const hasValidPrefix = hasValidClientPrefix
 
 export async function POST() {
   const session = await auth()

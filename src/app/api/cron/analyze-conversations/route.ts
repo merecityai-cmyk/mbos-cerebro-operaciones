@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { clients, users, tasks, conversationSnapshots, aiTokenUsage } from '@/lib/db/schema'
-import { getContactDisplayName, getUnitedDraftClients, UNITED_DRAFT_CLIENT_TAG } from '@/lib/ghl/contacts'
+import { getContactDisplayName, getUnitedDraftClients, UNITED_DRAFT_CLIENT_TAG, hasValidClientPrefix } from '@/lib/ghl/contacts'
 import { getContactConversation, getConversationMessages, formatMessagesForClaude } from '@/lib/ghl/conversations'
 import { createGHLTask } from '@/lib/ghl/tasks'
 import { analyzeConversation } from '@/lib/ai/analyze-conversation'
@@ -11,13 +11,8 @@ import { GHLError } from '@/lib/ghl/client'
 
 const LOCATION_ID = process.env.GHL_LOCATION_ID!
 
-// Prefijos válidos para auto-registrar nuevos grupos GHL
-const VALID_PREFIXES = ['adm', 'ud- az', 'ud-az', 'udt- az', 'udt-az']
-
-function hasValidPrefix(name: string): boolean {
-  const lower = name.toLowerCase().trim()
-  return VALID_PREFIXES.some(prefix => lower.startsWith(prefix))
-}
+// Prefijos válidos para auto-registrar nuevos grupos GHL (fuente única en contacts.ts)
+const hasValidPrefix = hasValidClientPrefix
 
 // ─── Auth del cron ─────────────────────────────────────────────────────────
 

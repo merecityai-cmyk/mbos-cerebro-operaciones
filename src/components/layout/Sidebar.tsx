@@ -9,6 +9,7 @@ import {
   FileText,
   Settings,
   BarChart3,
+  MessageSquare,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { label: 'Clientes', href: '/clients', icon: Users },
   { label: 'Reportes', href: '/reports', icon: FileText },
   { label: 'KPI Empresas', href: '/kpi', icon: BarChart3 },
+  { label: 'Mensajes', href: '/mensajes', icon: MessageSquare },
 ]
 
 const MANAGER_ITEMS = [

@@ -213,3 +213,61 @@ export type TaskAuditLog = typeof taskAuditLog.$inferSelect
 export type AiTokenUsage = typeof aiTokenUsage.$inferSelect
 export type KpiMonthlyRecord = typeof kpiMonthlyRecords.$inferSelect
 export type KpiChecklistItem = typeof kpiChecklistItems.$inferSelect
+
+// ─── Broadcast (mensajes masivos SMS) ───────────────────────────────────────────
+
+export const broadcastChannelEnum = pgEnum('broadcast_channel', ['sms'])
+export const broadcastStatusEnum = pgEnum('broadcast_status', [
+  'scheduled', // esperando su hora (o listo para arrancar ya)
+  'sending', // en curso, despachando 1 grupo por minuto
+  'completed', // todos los grupos procesados
+  'cancelled', // cancelada manualmente
+])
+export const recipientStatusEnum = pgEnum('broadcast_recipient_status', [
+  'pending',
+  'sent',
+  'failed',
+])
+
+// Biblioteca de plantillas reutilizables
+export const messageTemplates = pgTable('message_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 150 }).notNull(),
+  body: text('body').notNull(),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// Una campaña de envío masivo
+export const broadcastCampaigns = pgTable('broadcast_campaigns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  message: text('message').notNull(),
+  channel: broadcastChannelEnum('channel').notNull().default('sms'),
+  status: broadcastStatusEnum('status').notNull().default('scheduled'),
+  intervalMinutes: integer('interval_minutes').notNull().default(1),
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(), // cuándo arranca; <= now = ya
+  lastSentAt: timestamp('last_sent_at', { withTimezone: true }), // último envío despachado (control de espaciado)
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// La cola: un registro por grupo/cliente destino de una campaña
+export const broadcastRecipients = pgTable('broadcast_recipients', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  campaignId: uuid('campaign_id').notNull().references(() => broadcastCampaigns.id, { onDelete: 'cascade' }),
+  clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  ghlContactId: varchar('ghl_contact_id', { length: 100 }), // snapshot del contacto al momento de crear
+  orderIndex: integer('order_index').notNull().default(0),
+  status: recipientStatusEnum('status').notNull().default('pending'),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  ghlMessageId: varchar('ghl_message_id', { length: 100 }),
+  error: text('error'),
+})
+
+export type MessageTemplate = typeof messageTemplates.$inferSelect
+export type BroadcastCampaign = typeof broadcastCampaigns.$inferSelect
+export type BroadcastRecipient = typeof broadcastRecipients.$inferSelect

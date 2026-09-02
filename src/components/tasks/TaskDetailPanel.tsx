@@ -12,6 +12,7 @@ import type { TaskWithRelations, TaskStatus } from '@/types'
 interface TaskDetailPanelProps {
   task: TaskWithRelations | null
   advisors: Array<{ id: string; name: string }>
+  clients: Array<{ id: string; name: string }>
   open: boolean
   onClose: () => void
   onStatusChange: (taskId: string, status: TaskStatus) => Promise<void>
@@ -36,7 +37,7 @@ interface AuditEntry {
 const selectClass = 'w-full h-9 text-sm border border-[#334155] rounded-md px-2 bg-[#1E293B] text-[#F1F5F9] focus:outline-none focus:border-[#60A5FA] cursor-pointer'
 const inputClass = 'w-full text-sm border border-[#334155] rounded-md px-3 py-2 bg-[#1E293B] text-[#F1F5F9] placeholder:text-[#475569] focus:outline-none focus:border-[#60A5FA]'
 
-export function TaskDetailPanel({ task, advisors, open, onClose, onStatusChange, onAssigneeChange }: TaskDetailPanelProps) {
+export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStatusChange, onAssigneeChange }: TaskDetailPanelProps) {
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('detail')
 
@@ -169,11 +170,20 @@ export function TaskDetailPanel({ task, advisors, open, onClose, onStatusChange,
           <div className="py-4 space-y-4">
             {/* Cliente + fecha */}
             <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <Building2 className="h-4 w-4 text-[#475569] flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-[#475569]">Cliente</p>
-                  <p className="text-sm font-medium text-[#F1F5F9]">{task.client.name}</p>
+              <div className="flex items-start gap-2.5">
+                <Building2 className="h-4 w-4 text-[#475569] flex-shrink-0 mt-5" />
+                <div className="flex-1">
+                  <p className="text-[10px] text-[#475569] mb-1">Cliente</p>
+                  <select
+                    defaultValue={task.client.id}
+                    onChange={e => saveField('clientId', e.target.value)}
+                    disabled={saving}
+                    className={selectClass}
+                  >
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">

@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         // Obtener conversación de la semana desde GHL
         let conversationText = ''
         try {
-          const conversation = await getContactConversation(LOCATION_ID, client.ghlContactId)
+          const conversation = client.ghlContactId ? await getContactConversation(LOCATION_ID, client.ghlContactId) : null
           if (conversation) {
             const { messages } = await getConversationMessages(conversation.id)
             // Filtrar solo mensajes de la semana reportada

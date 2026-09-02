@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
 
   for (const task of activeTasks) {
     try {
+      if (!task.ghlContactId) { result.synced++; continue }
       const ghlTask = await getGHLTask(task.ghlContactId, task.ghlTaskId!)
       if (!ghlTask) { result.synced++; continue }
 

@@ -10,6 +10,7 @@ import { GHLError } from '@/lib/ghl/client'
 const patchSchema = z.object({
   status: z.enum(['pending', 'in_progress', 'completed', 'overdue']).optional(),
   assignedToId: z.string().uuid().optional(),
+  clientId: z.string().uuid().optional(),
   dueDate: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   title: z.string().min(1).max(500).optional(),
@@ -65,7 +66,7 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { status, assignedToId, dueDate, notes, title, description } = parsed.data
+  const { status, assignedToId, clientId, dueDate, notes, title, description } = parsed.data
 
   // Obtener tarea actual para el sync con GHL
   const [currentTask] = await db
@@ -84,6 +85,7 @@ export async function PATCH(
     else updateData.completedAt = null
   }
   if (assignedToId !== undefined) updateData.assignedToId = assignedToId
+  if (clientId !== undefined) updateData.clientId = clientId
   if (dueDate !== undefined) updateData.dueDate = dueDate
   if (notes !== undefined) updateData.notes = notes
   if (title !== undefined) updateData.title = title

@@ -32,7 +32,7 @@ export function SyncGroupsButton() {
         className="flex items-center gap-2 h-9 px-4 text-sm font-medium bg-[#1E40AF] text-white rounded-lg hover:bg-[#1E3A8A] disabled:opacity-50 transition-colors"
       >
         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        {loading ? 'Sincronizando...' : 'Sincronizar grupos GHL'}
+        {loading ? 'Sincronizando...' : 'Sincronizar grupos Merecity'}
       </button>
 
       {result && (

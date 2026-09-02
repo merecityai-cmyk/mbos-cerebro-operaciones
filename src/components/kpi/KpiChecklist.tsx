@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useOptimistic, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { KPI_PHASES } from '@/lib/kpi/phases'
 import type { KpiChecklistItem } from '@/lib/db/schema'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export function KpiChecklist({ recordId, items: initialItems, observations: initObs, phasesEnabled, stats: initStats }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [observations, setObservations] = useState(initObs ?? '')
   const [savingObs, setSavingObs] = useState(false)
@@ -70,6 +72,7 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
+      router.refresh()
     })
   }
 

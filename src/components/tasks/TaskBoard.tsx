@@ -197,6 +197,7 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
       <TaskDetailPanel
         task={selectedTask}
         advisors={advisors}
+        clients={clients}
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         onStatusChange={handleStatusChange}

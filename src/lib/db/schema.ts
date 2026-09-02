@@ -44,7 +44,7 @@ export const users = pgTable('users', {
 export const clients = pgTable('clients', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
-  ghlContactId: varchar('ghl_contact_id', { length: 100 }).notNull().unique(),
+  ghlContactId: varchar('ghl_contact_id', { length: 100 }).unique(),
   assignedAdvisorId: uuid('assigned_advisor_id')
     .notNull()
     .references(() => users.id),

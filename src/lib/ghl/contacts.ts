@@ -23,6 +23,25 @@ interface GHLContactsSearchResponse {
 // La etiqueta que identifica clientes activos de United Draft en GHL
 export const UNITED_DRAFT_CLIENT_TAG = 'cliente united'
 
+// Prefijos que identifican grupos de clientes de United Draft en Merecity
+const ADM_PREFIXES = ['adm', 'ud- az', 'ud-az', 'udt- az', 'udt-az']
+
+function hasAdmPrefix(name: string): boolean {
+  const lower = name.toLowerCase().trim()
+  return ADM_PREFIXES.some(p => lower.startsWith(p))
+}
+
+/**
+ * Agrega el tag "cliente united" a un contacto en GHL/Merecity.
+ */
+async function addClienteUnitedTag(contactId: string, currentTags: string[]): Promise<void> {
+  if (currentTags.includes(UNITED_DRAFT_CLIENT_TAG)) return
+  await ghlFetch(`/contacts/${contactId}`, {
+    method: 'PUT',
+    body: { tags: [...currentTags, UNITED_DRAFT_CLIENT_TAG] },
+  })
+}
+
 /**
  * Obtiene un contacto de GHL por su ID.
  */
@@ -40,15 +59,15 @@ interface GHLContactsSearchPostResponse {
 }
 
 /**
- * Obtiene contactos con la etiqueta "cliente united" usando el endpoint POST /contacts/search.
- * Mucho más eficiente que paginar todos los contactos y filtrar client-side.
+ * Obtiene contactos con la etiqueta "cliente united" desde Merecity.
+ * También busca contactos con prefijo ADM/UD-AZ que no tengan el tag y se lo agrega automáticamente.
  */
 export async function getUnitedDraftClients(
   locationId: string
 ): Promise<GHLContact[]> {
+  // 1. Buscar contactos que ya tienen el tag
   const allContacts: GHLContact[] = []
   let page = 1
-
   while (true) {
     const data = await ghlFetch<GHLContactsSearchPostResponse>('/contacts/search', {
       method: 'POST',
@@ -56,17 +75,41 @@ export async function getUnitedDraftClients(
         locationId,
         pageLimit: 100,
         page,
-        filters: [
-          { field: 'tags', operator: 'contains', value: UNITED_DRAFT_CLIENT_TAG },
-        ],
+        filters: [{ field: 'tags', operator: 'contains', value: UNITED_DRAFT_CLIENT_TAG }],
       },
     })
-
     const batch = data.contacts ?? []
     allContacts.push(...batch)
-
     if (batch.length < 100) break
     page++
+  }
+
+  // 2. Buscar todos los contactos y detectar los que tienen prefijo ADM pero no tienen el tag
+  try {
+    const taggedIds = new Set(allContacts.map(c => c.id))
+    let scanPage = 1
+    while (true) {
+      const data = await ghlFetch<GHLContactsSearchPostResponse>('/contacts/search', {
+        method: 'POST',
+        body: { locationId, pageLimit: 100, page: scanPage },
+      })
+      const batch = data.contacts ?? []
+      for (const contact of batch) {
+        if (taggedIds.has(contact.id)) continue
+        const name = getContactDisplayName(contact)
+        if (!hasAdmPrefix(name)) continue
+        // Auto-etiquetar y agregar a la lista
+        await addClienteUnitedTag(contact.id, contact.tags ?? [])
+        contact.tags = [...(contact.tags ?? []), UNITED_DRAFT_CLIENT_TAG]
+        allContacts.push(contact)
+        taggedIds.add(contact.id)
+        console.log(`[GHL] Auto-etiquetado: "${name}" → cliente united`)
+      }
+      if (batch.length < 100) break
+      scanPage++
+    }
+  } catch (err) {
+    console.error('[GHL] Error en auto-etiquetado de contactos ADM:', err)
   }
 
   return allContacts

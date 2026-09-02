@@ -5,7 +5,7 @@ import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export function SyncGroupsButton() {
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ added: number; skipped: number } | null>(null)
+  const [result, setResult] = useState<{ added: number; skipped: number; addedNames?: string[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSync() {
@@ -36,10 +36,19 @@ export function SyncGroupsButton() {
       </button>
 
       {result && (
-        <div className="flex items-center gap-1.5 text-sm text-emerald-600">
-          <CheckCircle2 className="h-4 w-4" />
-          {result.added} cliente{result.added !== 1 ? 's' : ''} nuevo{result.added !== 1 ? 's' : ''} añadido{result.added !== 1 ? 's' : ''}
-          {result.skipped > 0 && <span className="text-[#64748B]"> ({result.skipped} ya existían)</span>}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 text-sm text-emerald-600">
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+            {result.added === 0
+              ? 'Sin clientes nuevos'
+              : `${result.added} cliente${result.added !== 1 ? 's' : ''} nuevo${result.added !== 1 ? 's' : ''} añadido${result.added !== 1 ? 's' : ''}`}
+            {result.skipped > 0 && <span className="text-[#64748B]">({result.skipped} ya existían)</span>}
+          </div>
+          {result.addedNames && result.addedNames.length > 0 && (
+            <ul className="ml-6 text-xs text-[#059669] space-y-0.5">
+              {result.addedNames.map(n => <li key={n}>• {n}</li>)}
+            </ul>
+          )}
         </div>
       )}
 

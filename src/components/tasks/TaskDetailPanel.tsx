@@ -46,6 +46,7 @@ export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStat
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
+  const [clientId, setClientId] = useState('')
   const [fieldSaved, setFieldSaved] = useState<string | null>(null)
 
   // Comments
@@ -63,6 +64,7 @@ export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStat
     setDescription(task.description ?? '')
     setDueDate(task.dueDate ?? '')
     setNotes(task.notes ?? '')
+    setClientId(task.client.id)
     setComments([])
     setAuditLog([])
     setActiveTab('detail')
@@ -175,8 +177,8 @@ export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStat
                 <div className="flex-1">
                   <p className="text-[10px] text-[#475569] mb-1">Cliente</p>
                   <select
-                    defaultValue={task.client.id}
-                    onChange={e => saveField('clientId', e.target.value)}
+                    value={clientId}
+                    onChange={e => { setClientId(e.target.value); saveField('clientId', e.target.value) }}
                     disabled={saving}
                     className={selectClass}
                   >

@@ -86,11 +86,11 @@ export default async function SettingsPage() {
         )}
       </div>
 
-      {/* Sincronización manual de grupos GHL */}
+      {/* Sincronización manual de grupos Merecity */}
       <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-        <h3 className="text-sm font-semibold text-[#0F172A] mb-1">Sincronizar clientes desde GHL</h3>
+        <h3 className="text-sm font-semibold text-[#0F172A] mb-1">Sincronizar clientes desde Merecity</h3>
         <p className="text-xs text-[#64748B] mb-4">
-          Busca contactos con tag "cliente united" en GoHighLevel y añade los nuevos a la app.
+          Busca contactos con tag "cliente united" en Merecity y añade los nuevos a la app.
         </p>
         <SyncGroupsButton />
       </div>

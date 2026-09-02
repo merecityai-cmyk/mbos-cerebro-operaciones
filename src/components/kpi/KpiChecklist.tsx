@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useOptimistic, useTransition } from 'react'
+import { usePathname } from 'next/navigation'
 import { KPI_PHASES } from '@/lib/kpi/phases'
 import type { KpiChecklistItem } from '@/lib/db/schema'
 import { cn } from '@/lib/utils'
 import { CheckCircle2, Circle, Clock, Save } from 'lucide-react'
+import { toggleKpiItem } from '@/app/actions/kpi'
 
-// Un click: marca como completado. Segundo click: vuelve a pendiente.
-// "En proceso" se mantiene como estado visible pero el click lo completa.
 const STATUS_CYCLE: Record<string, 'pending' | 'in_progress' | 'completed'> = {
   pending: 'completed',
   in_progress: 'completed',
@@ -47,42 +47,29 @@ interface Props {
 }
 
 export function KpiChecklist({ recordId, items: initialItems, observations: initObs, phasesEnabled, stats: initStats }: Props) {
+  const pathname = usePathname()
+  const [isPending, startTransition] = useTransition()
   const [observations, setObservations] = useState(initObs ?? '')
   const [savingObs, setSavingObs] = useState(false)
   const [obsMsg, setObsMsg] = useState<string | null>(null)
-  const [, forceRender] = useState(0)
-  const isPending = false
 
-  // useRef sobrevive re-renders del servidor — guarda los estados locales
-  // sin importar si Next.js re-hidrata el componente con datos del servidor
-  const overrides = useRef<Record<string, 'pending' | 'in_progress' | 'completed'>>({})
-
-  // Mezcla datos del servidor con overrides locales
-  const items = initialItems.map(i =>
-    overrides.current[i.id] !== undefined
-      ? { ...i, status: overrides.current[i.id] }
-      : i
+  const [optimisticItems, updateOptimistic] = useOptimistic(
+    initialItems,
+    (state, update: { id: string; status: 'pending' | 'in_progress' | 'completed' }) =>
+      state.map(i => i.id === update.id ? { ...i, status: update.status } : i)
   )
 
+  const items = optimisticItems
   const total = items.length
   const completed = items.filter((i) => i.status === 'completed').length
   const inProgress = items.filter((i) => i.status === 'in_progress').length
   const completionPct = total > 0 ? Math.round((completed / total) * 100) : 0
 
   function toggleItem(item: KpiChecklistItem) {
-    const currentStatus = overrides.current[item.id] ?? item.status
-    const newStatus = STATUS_CYCLE[currentStatus]
-    overrides.current[item.id] = newStatus
-    forceRender(n => n + 1) // forzar re-render con el override
-
-    fetch(`/api/kpi/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    }).catch(() => {
-      // Si falla red, revertir override
-      overrides.current[item.id] = currentStatus
-      forceRender(n => n + 1)
+    const newStatus = STATUS_CYCLE[item.status]
+    startTransition(async () => {
+      updateOptimistic({ id: item.id, status: newStatus })
+      await toggleKpiItem(item.id, item.status, pathname)
     })
   }
 

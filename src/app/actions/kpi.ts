@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 const STATUS_CYCLE: Record<string, 'pending' | 'in_progress' | 'completed'> = {
-  pending: 'completed',
+  pending: 'in_progress',
   in_progress: 'completed',
   completed: 'pending',
 }

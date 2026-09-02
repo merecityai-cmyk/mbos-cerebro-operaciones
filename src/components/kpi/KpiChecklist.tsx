@@ -9,7 +9,7 @@ import { CheckCircle2, Circle, Clock, Save } from 'lucide-react'
 import { toggleKpiItem } from '@/app/actions/kpi'
 
 const STATUS_CYCLE: Record<string, 'pending' | 'in_progress' | 'completed'> = {
-  pending: 'completed',
+  pending: 'in_progress',
   in_progress: 'completed',
   completed: 'pending',
 }

@@ -6,8 +6,10 @@ import type { KpiChecklistItem } from '@/lib/db/schema'
 import { cn } from '@/lib/utils'
 import { CheckCircle2, Circle, Clock, Save } from 'lucide-react'
 
+// Un click: marca como completado. Segundo click: vuelve a pendiente.
+// "En proceso" se mantiene como estado visible pero el click lo completa.
 const STATUS_CYCLE: Record<string, 'pending' | 'in_progress' | 'completed'> = {
-  pending: 'in_progress',
+  pending: 'completed',
   in_progress: 'completed',
   completed: 'pending',
 }

@@ -72,8 +72,9 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
-      router.refresh()
     })
+    // Refrescar fuera de la transición para no cancelar el estado optimista
+    setTimeout(() => router.refresh(), 800)
   }
 
   async function saveObservations() {

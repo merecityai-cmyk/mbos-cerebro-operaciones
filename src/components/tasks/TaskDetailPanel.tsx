@@ -17,6 +17,7 @@ interface TaskDetailPanelProps {
   onClose: () => void
   onStatusChange: (taskId: string, status: TaskStatus) => Promise<void>
   onAssigneeChange: (taskId: string, userId: string) => Promise<void>
+  onClientChange: (taskId: string, clientId: string, clientName: string) => void
 }
 
 type Tab = 'detail' | 'comments' | 'history'
@@ -37,7 +38,7 @@ interface AuditEntry {
 const selectClass = 'w-full h-9 text-sm border border-[#334155] rounded-md px-2 bg-[#1E293B] text-[#F1F5F9] focus:outline-none focus:border-[#60A5FA] cursor-pointer'
 const inputClass = 'w-full text-sm border border-[#334155] rounded-md px-3 py-2 bg-[#1E293B] text-[#F1F5F9] placeholder:text-[#475569] focus:outline-none focus:border-[#60A5FA]'
 
-export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStatusChange, onAssigneeChange }: TaskDetailPanelProps) {
+export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStatusChange, onAssigneeChange, onClientChange }: TaskDetailPanelProps) {
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('detail')
 
@@ -178,7 +179,13 @@ export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStat
                   <p className="text-[10px] text-[#475569] mb-1">Cliente</p>
                   <select
                     value={clientId}
-                    onChange={e => { setClientId(e.target.value); saveField('clientId', e.target.value) }}
+                    onChange={e => {
+                      const newId = e.target.value
+                      const newName = clients.find(c => c.id === newId)?.name ?? ''
+                      setClientId(newId)
+                      saveField('clientId', newId)
+                      onClientChange(task!.id, newId, newName)
+                    }}
                     disabled={saving}
                     className={selectClass}
                   >

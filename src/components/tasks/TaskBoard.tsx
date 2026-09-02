@@ -133,6 +133,22 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
     []
   )
 
+  const handleClientChange = useCallback(
+    (taskId: string, newClientId: string, newClientName: string) => {
+      localOverrides.current.set(taskId, {
+        ...localOverrides.current.get(taskId),
+        client: { id: newClientId, name: newClientName, ghlContactId: null },
+      })
+      forceRender(n => n + 1)
+      setSelectedTask(prev =>
+        prev?.id === taskId
+          ? { ...prev, client: { id: newClientId, name: newClientName, ghlContactId: null } }
+          : prev
+      )
+    },
+    []
+  )
+
   const handleAssigneeChange = useCallback(
     async (taskId: string, userId: string) => {
       const newAdvisor = advisors.find((a) => a.id === userId)
@@ -207,6 +223,7 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
         onClose={() => setPanelOpen(false)}
         onStatusChange={handleStatusChange}
         onAssigneeChange={handleAssigneeChange}
+        onClientChange={handleClientChange}
       />
 
       <AddTaskDialog

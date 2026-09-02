@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useOptimistic, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, RefreshCw } from 'lucide-react'
 import { TaskColumn } from './TaskColumn'
@@ -73,21 +73,24 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [addTaskOpen, setAddTaskOpen] = useState(false)
 
-  const [optimisticTasks, updateOptimistic] = useOptimistic(
-    initialTasks,
-    (state: TaskWithRelations[], update: Partial<TaskWithRelations> & { id: string }) => {
-      // If the task doesn't exist yet, add it; otherwise update it
-      const exists = state.some(t => t.id === update.id)
-      if (!exists) return [...state, { ...update } as TaskWithRelations]
-      return state.map((t) => t.id === update.id ? { ...t, ...update } : t)
-    }
+  // useRef sobrevive el router.refresh() cada 30s sin perder cambios locales
+  const localOverrides = useRef<Map<string, Partial<TaskWithRelations>>>(new Map())
+  const [, forceRender] = useState(0)
+
+  const applyOverrides = useCallback((tasks: TaskWithRelations[]) =>
+    tasks.map(t => {
+      const ov = localOverrides.current.get(t.id)
+      return ov ? { ...t, ...ov } : t
+    }),
+    []
   )
 
   const handleTaskCreated = useCallback((task: TaskWithRelations) => {
-    updateOptimistic(task)
-  }, [updateOptimistic])
+    localOverrides.current.set(task.id, task)
+    forceRender(n => n + 1)
+  }, [])
 
-  const filteredTasks = optimisticTasks.filter((t) => {
+  const filteredTasks = applyOverrides(initialTasks).filter((t) => {
     const matchAdvisor = !selectedAdvisorId || t.assignedTo.id === selectedAdvisorId
     const matchClient = !selectedClientId || t.client.id === selectedClientId
     const matchSearch = !searchQuery ||
@@ -118,7 +121,8 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
 
   const handleStatusChange = useCallback(
     async (taskId: string, status: TaskStatus) => {
-      updateOptimistic({ id: taskId, status })
+      localOverrides.current.set(taskId, { ...localOverrides.current.get(taskId), status })
+      forceRender(n => n + 1)
       setSelectedTask((prev) => (prev?.id === taskId ? { ...prev, status } : prev))
       await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -126,7 +130,7 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
         body: JSON.stringify({ status }),
       })
     },
-    [updateOptimistic]
+    []
   )
 
   const handleAssigneeChange = useCallback(
@@ -134,10 +138,11 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
       const newAdvisor = advisors.find((a) => a.id === userId)
       if (!newAdvisor) return
 
-      updateOptimistic({
-        id: taskId,
+      localOverrides.current.set(taskId, {
+        ...localOverrides.current.get(taskId),
         assignedTo: { id: userId, name: newAdvisor.name, email: '' },
       })
+      forceRender(n => n + 1)
       setSelectedTask((prev) =>
         prev?.id === taskId
           ? { ...prev, assignedTo: { id: userId, name: newAdvisor.name, email: '' } }
@@ -150,7 +155,7 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
         body: JSON.stringify({ assignedToId: userId }),
       })
     },
-    [advisors, updateOptimistic]
+    [advisors]
   )
 
   return (

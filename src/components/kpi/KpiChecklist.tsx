@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { KPI_PHASES } from '@/lib/kpi/phases'
 import type { KpiChecklistItem } from '@/lib/db/schema'
 import { cn } from '@/lib/utils'
@@ -50,8 +50,19 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
   const [observations, setObservations] = useState(initObs ?? '')
   const [savingObs, setSavingObs] = useState(false)
   const [obsMsg, setObsMsg] = useState<string | null>(null)
-  const [items, setItems] = useState(initialItems)
+  const [, forceRender] = useState(0)
   const isPending = false
+
+  // useRef sobrevive re-renders del servidor — guarda los estados locales
+  // sin importar si Next.js re-hidrata el componente con datos del servidor
+  const overrides = useRef<Record<string, 'pending' | 'in_progress' | 'completed'>>({})
+
+  // Mezcla datos del servidor con overrides locales
+  const items = initialItems.map(i =>
+    overrides.current[i.id] !== undefined
+      ? { ...i, status: overrides.current[i.id] }
+      : i
+  )
 
   const total = items.length
   const completed = items.filter((i) => i.status === 'completed').length
@@ -59,17 +70,19 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
   const completionPct = total > 0 ? Math.round((completed / total) * 100) : 0
 
   function toggleItem(item: KpiChecklistItem) {
-    const newStatus = STATUS_CYCLE[item.status]
-    // Actualizar inmediatamente en UI
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i))
-    // Guardar en servidor en segundo plano
+    const currentStatus = overrides.current[item.id] ?? item.status
+    const newStatus = STATUS_CYCLE[currentStatus]
+    overrides.current[item.id] = newStatus
+    forceRender(n => n + 1) // forzar re-render con el override
+
     fetch(`/api/kpi/items/${item.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     }).catch(() => {
-      // Si falla, revertir
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: item.status } : i))
+      // Si falla red, revertir override
+      overrides.current[item.id] = currentStatus
+      forceRender(n => n + 1)
     })
   }
 

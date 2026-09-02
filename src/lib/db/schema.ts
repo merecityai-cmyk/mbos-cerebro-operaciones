@@ -81,6 +81,7 @@ export const tasks = pgTable('tasks', {
   ghlTaskId: varchar('ghl_task_id', { length: 100 }),
   dueDate: date('due_date'),
   notes: text('notes'),
+  createdById: uuid('created_by_id').references(() => users.id),
   assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

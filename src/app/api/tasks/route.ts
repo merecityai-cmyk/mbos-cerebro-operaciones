@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       source: 'manual',
       dueDate,
+      createdById: session.user.id as string,
     })
     .returning()
 

@@ -52,8 +52,12 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
   const [savingObs, setSavingObs] = useState(false)
   const [obsMsg, setObsMsg] = useState<string | null>(null)
 
+  // Estado local — se actualiza tras confirmar con el servidor, evitando que
+  // useOptimistic resetee al valor viejo cuando termina la transición.
+  const [items, setItems] = useState(initialItems)
+
   const [optimisticItems, updateOptimisticItems] = useOptimistic(
-    initialItems,
+    items,
     (state, update: { id: string; status: KpiChecklistItem['status'] }) =>
       state.map((item) => item.id === update.id ? { ...item, status: update.status } : item)
   )
@@ -72,9 +76,9 @@ export function KpiChecklist({ recordId, items: initialItems, observations: init
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
+      // Actualizar estado local para que useOptimistic no resetee al valor viejo
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i))
     })
-    // Refrescar fuera de la transición para no cancelar el estado optimista
-    setTimeout(() => router.refresh(), 800)
   }
 
   async function saveObservations() {

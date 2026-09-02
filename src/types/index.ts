@@ -27,7 +27,7 @@ export interface TaskWithRelations {
   client: {
     id: string
     name: string
-    ghlContactId: string
+    ghlContactId: string | null
   }
   assignedTo: {
     id: string

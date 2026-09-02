@@ -119,19 +119,20 @@ async function runJob() {
           continue
         }
 
-        // Obtener mensajes nuevos desde el último procesado
-        const { messages, lastMessageId } = await getConversationMessages(
-          conversation.id,
-          snapshot?.lastMessageId ?? undefined
-        )
+        // Obtener los últimos 100 mensajes SIN cursor — GHL con cursor devuelve mensajes
+        // más antiguos (paginación inversa), lo que causa que nunca detectemos mensajes nuevos.
+        // Filtramos localmente comparando contra el lastMessageId guardado en snapshot.
+        const { messages, lastMessageId } = await getConversationMessages(conversation.id)
 
-        // Filtrar solo mensajes posteriores al último procesado
         let newMessages = messages
         if (snapshot?.lastMessageId) {
           const lastIdx = messages.findIndex((m) => m.id === snapshot.lastMessageId)
           if (lastIdx !== -1) {
-            newMessages = messages.slice(lastIdx + 1)
+            // Mensajes posteriores al último procesado (más nuevos)
+            newMessages = messages.slice(0, lastIdx)
           }
+          // Si lastIdx === -1: el mensaje guardado no está en los últimos 100
+          // → asumimos todos son nuevos (evita re-procesar en el peor caso)
         }
 
         if (newMessages.length === 0) {
@@ -230,12 +231,9 @@ async function runJob() {
           }
         }
 
-        // Actualizar snapshot con el último mensaje procesado
-        await upsertSnapshot(
-          dbClient.id,
-          conversation.id,
-          lastMessageId ?? snapshot?.lastMessageId ?? null
-        )
+        // Guardar el ID del mensaje más reciente (messages[0] = más nuevo en orden descendente)
+        const newestMessageId = messages[0]?.id ?? snapshot?.lastMessageId ?? null
+        await upsertSnapshot(dbClient.id, conversation.id, newestMessageId)
 
         result.processed++
       } catch (clientErr) {

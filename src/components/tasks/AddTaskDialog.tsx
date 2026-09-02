@@ -10,13 +10,14 @@ interface AddTaskDialogProps {
   onClose: () => void
   advisors: Array<{ id: string; name: string }>
   clients: Array<{ id: string; name: string }>
+  currentUser: { id: string; name: string }
   onCreated: (task: TaskWithRelations) => void
 }
 
 const inputClass =
   'w-full h-9 text-sm border border-[#E2E8F0] rounded-md px-3 bg-white text-[#0F172A] focus:outline-none focus:border-[#1E40AF]'
 
-export function AddTaskDialog({ open, onClose, advisors, clients, onCreated }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onClose, advisors, clients, currentUser, onCreated }: AddTaskDialogProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [assignedToId, setAssignedToId] = useState(advisors[0]?.id ?? '')
@@ -71,6 +72,7 @@ export function AddTaskDialog({ open, onClose, advisors, clients, onCreated }: A
         notes: null,
         client: { id: clientId, name: client?.name ?? '', ghlContactId: null },
         assignedTo: { id: assignedToId, name: advisor?.name ?? '', email: '' },
+        createdBy: { id: currentUser.id, name: currentUser.name },
       }
 
       onCreated(taskWithRelations)

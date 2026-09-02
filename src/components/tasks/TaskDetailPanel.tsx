@@ -199,7 +199,12 @@ export function TaskDetailPanel({ task, advisors, clients, open, onClose, onStat
                 <Tag className="h-4 w-4 text-[#475569] flex-shrink-0" />
                 <div>
                   <p className="text-[10px] text-[#475569]">Creada</p>
-                  <p className="text-sm font-medium text-[#F1F5F9]">{formatDate(task.createdAt)}</p>
+                  <p className="text-sm font-medium text-[#F1F5F9]">
+                    {formatDate(task.createdAt)}
+                    {task.createdBy && (
+                      <span className="text-[#64748B] font-normal"> · por {task.createdBy.name}</span>
+                    )}
+                  </p>
                 </div>
               </div>
             </div>

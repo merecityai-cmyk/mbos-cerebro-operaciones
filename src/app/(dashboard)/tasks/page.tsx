@@ -2,11 +2,14 @@ import { requireSession } from '@/lib/auth/helpers'
 import { db } from '@/lib/db'
 import { tasks, clients, users } from '@/lib/db/schema'
 import { eq, desc } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { TaskBoard } from '@/components/tasks/TaskBoard'
 import type { TaskWithRelations } from '@/types'
 
+const creator = alias(users, 'creator')
+
 export default async function TasksPage() {
-  await requireSession()
+  const session = await requireSession()
 
   // Query directa a DB — sin API route innecesaria
   const rows = await db
@@ -34,10 +37,15 @@ export default async function TasksPage() {
         name: users.name,
         email: users.email,
       },
+      createdBy: {
+        id: creator.id,
+        name: creator.name,
+      },
     })
     .from(tasks)
     .innerJoin(clients, eq(tasks.clientId, clients.id))
     .innerJoin(users, eq(tasks.assignedToId, users.id))
+    .leftJoin(creator, eq(tasks.createdById, creator.id))
     // Primero vencidas, luego por fecha límite más próxima, luego por creación
     .orderBy(tasks.dueDate, desc(tasks.createdAt))
 
@@ -64,6 +72,7 @@ export default async function TasksPage() {
         initialTasks={rows as TaskWithRelations[]}
         advisors={advisors}
         clients={allClients}
+        currentUser={{ id: session.user.id as string, name: session.user.name ?? '' }}
       />
     </div>
   )

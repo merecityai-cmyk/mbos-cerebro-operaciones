@@ -53,9 +53,10 @@ interface TaskBoardProps {
   initialTasks: TaskWithRelations[]
   advisors: Array<{ id: string; name: string }>
   clients: Array<{ id: string; name: string }>
+  currentUser: { id: string; name: string }
 }
 
-export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
+export function TaskBoard({ initialTasks, advisors, clients, currentUser }: TaskBoardProps) {
   const router = useRouter()
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
 
@@ -231,6 +232,7 @@ export function TaskBoard({ initialTasks, advisors, clients }: TaskBoardProps) {
         onClose={() => setAddTaskOpen(false)}
         advisors={advisors}
         clients={clients}
+        currentUser={currentUser}
         onCreated={handleTaskCreated}
       />
     </div>

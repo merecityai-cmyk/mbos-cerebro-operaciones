@@ -34,6 +34,10 @@ export interface TaskWithRelations {
     name: string
     email: string
   }
+  createdBy: {
+    id: string
+    name: string
+  } | null
 }
 
 export interface ClientWithStats {

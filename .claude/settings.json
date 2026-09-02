@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/mojave/.npm-global/lib/node_modules/@railway/cli/bin/railway up:*)",
+      "Bash(railway up:*)"
+    ]
+  }
+}

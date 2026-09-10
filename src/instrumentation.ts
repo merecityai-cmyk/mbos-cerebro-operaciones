@@ -8,4 +8,7 @@ export async function register() {
 
   const { startBroadcastScheduler } = await import('@/lib/broadcast/scheduler')
   startBroadcastScheduler()
+
+  const { startAnalysisScheduler } = await import('@/lib/analysis/scheduler')
+  startAnalysisScheduler()
 }

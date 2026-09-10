@@ -57,6 +57,13 @@
       "when": 1788375992414,
       "tag": "0007_sloppy_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789062076673,
+      "tag": "0008_noisy_demogoblin",
+      "breakpoints": true
     }
   ]
 }

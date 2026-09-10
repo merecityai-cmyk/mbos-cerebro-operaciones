@@ -271,3 +271,13 @@ export const broadcastRecipients = pgTable('broadcast_recipients', {
 export type MessageTemplate = typeof messageTemplates.$inferSelect
 export type BroadcastCampaign = typeof broadcastCampaigns.$inferSelect
 export type BroadcastRecipient = typeof broadcastRecipients.$inferSelect
+
+// ─── System state (clave/valor para schedulers, flags internos) ─────────────────
+
+export const systemState = pgTable('system_state', {
+  key: varchar('key', { length: 100 }).primaryKey(),
+  value: text('value'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export type SystemState = typeof systemState.$inferSelect

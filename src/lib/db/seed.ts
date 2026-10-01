@@ -1,16 +1,18 @@
 /**
- * Seed script — United Draft Internal Hub
+ * Seed script — Johan Pérez NEX
  *
  * Carga datos iniciales:
- * - 4 usuarios (Laura, Mariana, Norexis, Juan Diego)
- * - 32 clientes con ghlContactId placeholder
- * - Reglas de routing iniciales
+ * - 6 usuarios del equipo
+ * - 9 clientes con ghlContactId placeholder
+ * - Reglas de routing por tipo de tarea
  *
  * Uso: npx tsx src/lib/db/seed.ts
  *
  * IMPORTANTE: Los GHL Contact IDs de los clientes son placeholders.
  * Actualizar con los IDs reales antes de ir a producción:
  *   UPDATE clients SET ghl_contact_id = '<ID_REAL>' WHERE name = '<NOMBRE>';
+ *
+ * Los ghlUserId del equipo también son PENDING — reemplazar con los IDs reales de GHL.
  */
 
 import { config } from 'dotenv'
@@ -23,34 +25,46 @@ import * as schema from './schema'
 const connection = postgres(process.env.DATABASE_URL!, { max: 1 })
 const db = drizzle(connection, { schema })
 
-const INITIAL_PASSWORD = 'UnitedDraft2025!'
+const INITIAL_PASSWORD = 'JohanNEX2025!'
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 const USERS = [
   {
-    name: 'Laura',
-    email: 'laura.sanchez@udtgroup.co',
-    role: 'advisor' as const,
-    ghlUserId: '80JYPfisuglrFL4dkfkx',
-  },
-  {
-    name: 'Mariana',
-    email: 'mariana.ruiz@gmail.com',
-    role: 'advisor' as const,
-    ghlUserId: 'VT1iSiL62I8cV1uATEwe',
-  },
-  {
-    name: 'Norexis',
-    email: 'norexis@udtgroup.co',
-    role: 'advisor' as const,
-    ghlUserId: 'xIPJ7wT4kZh5Q5EMYgCX',
-  },
-  {
-    name: 'Juan Diego',
-    email: 'direccion@udtgroup.co',
+    name: 'Johan',
+    email: 'johan@johanpereznex.com',
     role: 'manager' as const,
-    ghlUserId: 'PlKnjNt3tb1Xrxor4U8t',
+    ghlUserId: 'PENDING_JOHAN_GHL_ID',
+  },
+  {
+    name: 'Editor',
+    email: 'editor@johanpereznex.com',
+    role: 'advisor' as const,
+    ghlUserId: 'PENDING_EDITOR_GHL_ID',
+  },
+  {
+    name: 'Sari',
+    email: 'sari@johanpereznex.com',
+    role: 'advisor' as const,
+    ghlUserId: 'PENDING_SARI_GHL_ID',
+  },
+  {
+    name: 'Vanina',
+    email: 'vanina@johanpereznex.com',
+    role: 'advisor' as const,
+    ghlUserId: 'PENDING_VANINA_GHL_ID',
+  },
+  {
+    name: 'SellerChat',
+    email: 'sellerchat@johanpereznex.com',
+    role: 'advisor' as const,
+    ghlUserId: 'PENDING_SELLERCHAT_GHL_ID',
+  },
+  {
+    name: 'Tráfico',
+    email: 'trafico@johanpereznex.com',
+    role: 'advisor' as const,
+    ghlUserId: 'PENDING_TRAFICO_GHL_ID',
   },
 ]
 
@@ -58,73 +72,86 @@ const USERS = [
 // ghlContactId = placeholder — reemplazar con IDs reales de GHL
 
 const CLIENT_NAMES = [
-  'Abogados Ospina & Asociados',
-  'Agropecuaria La Esperanza SAS',
-  'Arquitectura y Diseño Moderno SAS',
-  'Auto Partes El Rápido Ltda',
-  'Carga Segura Transportes SAS',
-  'Clínica Veterinaria San Paws',
-  'Comercializadora Frutas del Valle',
-  'Confecciones Textil Andina SAS',
-  'Constructora Horizonte Verde',
-  'Consultores Tecnología Digital SAS',
-  'Dental Estética Sonrisa Perfecta',
-  'Distribuidora Lácteos del Norte',
-  'Editorial Palabras Vivas SAS',
-  'Electrónica y Redes Conecta Ltda',
-  'Eventos y Catering Celebrando SAS',
-  'Farmacia y Droguería Salud Total',
-  'Ferretería Industrial El Tornillo',
-  'Gestión Ambiental Tierra Verde',
-  'Inmobiliaria Propiedades Plus SAS',
-  'Instituto Educativo Semillas',
-  'Inversiones y Portafolios Capital',
-  'Joyería y Relojería El Diamante',
-  'Laboratorio Clínico BioAnalysis',
-  'Logística y Almacenamiento MaxStore',
-  'Manufactura Plásticos Innovación',
-  'Optica Vision Clara SAS',
-  'Panadería y Pastelería Dulce Arte',
-  'Publicidad y Medios Creativos SAS',
-  'Seguros y Riesgos Proteger Ltda',
-  'Servicios de Aseo y Limpieza Clean',
-  'Telecomunicaciones NetWork Solutions',
-  'Turismo y Aventura Colombia Tours',
+  'Cliente 1 NEX',
+  'Cliente 2 NEX',
+  'Cliente 3 NEX',
+  'Cliente 4 NEX',
+  'Cliente 5 NEX',
+  'Cliente 6 NEX',
+  'Cliente 7 NEX',
+  'Cliente 8 NEX',
+  'Cliente 9 NEX',
 ]
 
 // ─── Routing Rules ────────────────────────────────────────────────────────────
 
-// Keywords para Norexis (impuestos / DIAN)
-const NOREXIS_KEYWORDS = [
-  'impuestos',
-  'dian',
-  'retención',
-  'retenciones',
-  'declaración de renta',
-  'renta',
-  'iva',
-  'tributario',
+const EDITOR_KEYWORDS = [
+  'edición',
+  'edicion',
+  'video',
+  'reels',
+  'reel',
+  'corte',
+  'montaje',
+  'editar',
 ]
 
-// Keywords para Laura (seguridad social / nómina)
-const LAURA_KEYWORDS = [
-  'seguridad social',
-  'pila',
-  'eps',
-  'pensión',
-  'pensiones',
-  'arl',
-  'planilla',
-  'parafiscales',
+const SARI_KEYWORDS = [
+  'contenido',
+  'post',
+  'publicación',
+  'publicacion',
+  'redes',
+  'instagram',
+  'feed',
+  'stories',
+  'tiktok',
+  'copy',
 ]
 
-// Keywords para Juan Diego (dirección)
-const JUAN_DIEGO_KEYWORDS = ['juan diego']
+const VANINA_KEYWORDS = [
+  'agendar',
+  'agenda',
+  'agendamiento',
+  'cita',
+  'reunión',
+  'reunion',
+  'llamada',
+]
+
+const SELLERCHAT_KEYWORDS = [
+  'whatsapp',
+  'sellerchat',
+  'automatización',
+  'automatizacion',
+  'bot',
+  'flujo',
+]
+
+const TRAFICO_KEYWORDS = [
+  'pauta',
+  'ads',
+  'publicidad',
+  'campaña',
+  'campana',
+  'meta ads',
+  'inversión',
+  'inversion',
+]
+
+const JOHAN_KEYWORDS = [
+  'cobro',
+  'factura',
+  'pago',
+  'deuda',
+  'cobrar',
+  'cuenta de cobro',
+]
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🌱 Iniciando seed...\n')
+  console.log('🌱 Iniciando seed — Johan Pérez NEX...\n')
 
   // 1. Hashear contraseña
   console.log('🔐 Hasheando contraseñas...')
@@ -146,7 +173,6 @@ async function main() {
     .onConflictDoNothing()
     .returning()
 
-  // Si ya existían, recuperarlos
   let allUsers = insertedUsers
   if (allUsers.length === 0) {
     console.log('  ⚠️  Usuarios ya existían — recuperando desde DB...')
@@ -157,14 +183,15 @@ async function main() {
   console.log(`  ✓ ${allUsers.length} usuarios listos`)
   allUsers.forEach((u) => console.log(`    - ${u.name} (${u.email}) [${u.role}]`))
 
-  // 3. Insertar clientes — distribuidos equitativamente entre asesoras
+  // 3. Insertar clientes — asignados a Johan como manager por defecto
   console.log('\n🏢 Insertando clientes...')
-  const advisors = [userByName['Laura'], userByName['Mariana'], userByName['Norexis']]
+  const johanUser = userByName['Johan']
+  if (!johanUser) throw new Error('Usuario Johan no encontrado')
 
-  const clientsToInsert = CLIENT_NAMES.map((name, i) => ({
+  const clientsToInsert = CLIENT_NAMES.map((name) => ({
     name,
     ghlContactId: `PENDING_${name.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`,
-    assignedAdvisorId: advisors[i % 3].id,
+    assignedAdvisorId: johanUser.id,
   }))
 
   const insertedClients = await db
@@ -180,30 +207,24 @@ async function main() {
 
   // 4. Insertar reglas de routing
   console.log('\n🔀 Insertando reglas de routing...')
-  const norexis = userByName['Norexis']
-  const laura = userByName['Laura']
-  const juanDiego = userByName['Juan Diego']
+  const editor = userByName['Editor']
+  const sari = userByName['Sari']
+  const vanina = userByName['Vanina']
+  const sellerChat = userByName['SellerChat']
+  const trafico = userByName['Tráfico']
+  const johan = userByName['Johan']
 
-  if (!norexis || !laura || !juanDiego) {
+  if (!editor || !sari || !vanina || !sellerChat || !trafico || !johan) {
     throw new Error('No se encontraron todos los usuarios necesarios para routing rules')
   }
 
   const routingRules = [
-    ...NOREXIS_KEYWORDS.map((keyword, i) => ({
-      keyword,
-      assignedToId: norexis.id,
-      priority: 10 + i,
-    })),
-    ...LAURA_KEYWORDS.map((keyword, i) => ({
-      keyword,
-      assignedToId: laura.id,
-      priority: 10 + i,
-    })),
-    ...JUAN_DIEGO_KEYWORDS.map((keyword, i) => ({
-      keyword,
-      assignedToId: juanDiego.id,
-      priority: 20 + i,
-    })),
+    ...EDITOR_KEYWORDS.map((keyword, i) => ({ keyword, assignedToId: editor.id, priority: 10 + i })),
+    ...SARI_KEYWORDS.map((keyword, i) => ({ keyword, assignedToId: sari.id, priority: 10 + i })),
+    ...VANINA_KEYWORDS.map((keyword, i) => ({ keyword, assignedToId: vanina.id, priority: 10 + i })),
+    ...SELLERCHAT_KEYWORDS.map((keyword, i) => ({ keyword, assignedToId: sellerChat.id, priority: 10 + i })),
+    ...TRAFICO_KEYWORDS.map((keyword, i) => ({ keyword, assignedToId: trafico.id, priority: 10 + i })),
+    ...JOHAN_KEYWORDS.map((keyword, i) => ({ keyword, assignedToId: johan.id, priority: 20 + i })),
   ]
 
   const insertedRules = await db
@@ -223,9 +244,10 @@ async function main() {
   console.log(`   Usuarios:          ${allUsers.length}`)
   console.log(`   Clientes:          ${clientsToInsert.length} (ghlContactId = PENDING_*)`)
   console.log(`   Reglas routing:    ${routingRules.length}`)
-  console.log('\n⚠️  IMPORTANTE: Actualizar los ghlContactId con los IDs reales de GHL')
-  console.log('   SQL de ejemplo:')
-  console.log("   UPDATE clients SET ghl_contact_id = '<ID_REAL>' WHERE name = '<NOMBRE>';")
+  console.log('\n⚠️  IMPORTANTE:')
+  console.log('   1. Actualizar ghlContactId con los IDs reales de GHL por cliente')
+  console.log('   2. Actualizar ghlUserId del equipo con los IDs reales de GHL')
+  console.log('   3. Agregar offerContext a cada cliente desde el dashboard')
 
   await connection.end()
 }

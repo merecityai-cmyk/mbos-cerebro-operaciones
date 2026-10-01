@@ -64,6 +64,13 @@
       "when": 1789062076673,
       "tag": "0008_noisy_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1759392000000,
+      "tag": "0009_bored_hellcat",
+      "breakpoints": true
     }
   ]
 }

@@ -37,38 +37,10 @@ async function setLastRun(when: Date): Promise<void> {
 }
 
 /**
- * Scheduler in-process del análisis diario. Reemplaza el cron externo de curl
- * (que fallaba con "curl: command not found"). Cada minuto revisa si ya pasó
- * una ventana programada sin correr; si es así, dispara el job una sola vez.
- * El estado persiste en system_state, así que sobrevive reinicios y NO re-corre
- * en cada deploy. Solo activo en producción.
+ * Scheduler automático DESHABILITADO para Johan Pérez NEX.
+ * Johan activa los jobs manualmente desde el dashboard.
+ * Esta función existe para compatibilidad con el import en layout pero no hace nada.
  */
 export function startAnalysisScheduler() {
-  if (started) return
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[ANALYSIS] scheduler NO iniciado (NODE_ENV != production)')
-    return
-  }
-  started = true
-
-  const tick = async () => {
-    try {
-      const now = new Date()
-      const window = mostRecentWindow(now)
-      const lastRun = await getLastRun()
-      if (lastRun && lastRun.getTime() >= window.getTime()) return // ya se corrió esta ventana
-
-      console.log(`[ANALYSIS] Ventana ${window.toISOString()} pendiente — disparando análisis`)
-      await setLastRun(now) // claim: evita re-disparo en los próximos ticks
-      // fire-and-forget: el job tarda ~15-20 min; runDailyAnalysis tiene su propio lock
-      runDailyAnalysis().catch((e) => console.error('[ANALYSIS] Error en corrida programada:', e))
-    } catch (e) {
-      console.error('[ANALYSIS] Error en tick del scheduler:', e)
-    }
-  }
-
-  // Primer chequeo a los 20s (deja arrancar el server), luego cada minuto.
-  setTimeout(tick, 20_000)
-  setInterval(tick, 60_000)
-  console.log(`[ANALYSIS] scheduler iniciado (ventanas UTC: ${RUN_HOURS_UTC.join(', ')})`)
+  console.log('[ANALYSIS] scheduler deshabilitado — jobs se activan manualmente desde el dashboard')
 }

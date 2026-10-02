@@ -22,7 +22,7 @@ export const taskStatusEnum = pgEnum('task_status', [
   'completed',
   'overdue',
 ])
-export const taskSourceEnum = pgEnum('task_source', ['ai_generated', 'manual'])
+export const taskSourceEnum = pgEnum('task_source', ['ai_generated', 'manual', 'fathom'])
 export const satisfactionEnum = pgEnum('satisfaction_level', [
   'high',
   'medium',
@@ -51,6 +51,7 @@ export const clients = pgTable('clients', {
   hasNomina: boolean('has_nomina').notNull().default(false),
   nominaCycle: integer('nomina_cycle'), // 10, 15, or 30 days
   hasDocumentosSoporte: boolean('has_documentos_soporte').notNull().default(false),
+  offerContext: text('offer_context'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

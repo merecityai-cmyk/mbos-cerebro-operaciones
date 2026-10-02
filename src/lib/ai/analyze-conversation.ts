@@ -20,24 +20,26 @@ function getClient(): Anthropic {
 }
 
 // System prompt estático — candidato ideal para prompt caching
-const SYSTEM_PROMPT = `Eres un asistente especializado en administración y contabilidad empresarial colombiana para United Draft S.A.S.
-Tu rol es analizar conversaciones entre asesores y clientes para extraer tareas pendientes de forma precisa.
+const SYSTEM_PROMPT = `Eres un asistente especializado en gestión de agencias de marketing digital para Johan Pérez NEX.
+Tu rol es analizar conversaciones entre el equipo de la agencia y sus clientes para extraer tareas pendientes de forma precisa.
 
 Reglas estrictas:
 - Extrae SOLO tareas concretas y accionables, no temas generales de conversación
 - Si el cliente pregunta algo pero no queda una tarea pendiente, NO la incluyas
-- Los títulos deben ser específicos: "Declarar IVA 2do bimestre 2026" es mejor que "Declaración de impuestos"
+- Los títulos deben ser específicos: "Editar reel inauguración local — 30s" es mejor que "Editar video"
 - Responde SIEMPRE con JSON válido sin markdown ni texto adicional
-- Usa terminología colombiana: "declaración de renta", "planilla PILA", "retención en la fuente", etc.`
+- El campo taskType DEBE ser uno de: edicion_video, redes_contenido, agendamiento, whatsapp_sistema, pauta_ads, cobro_factura`
 
 /**
  * Analiza una conversación de GHL y extrae tareas pendientes usando Claude.
  * Usa prompt caching en el system prompt para reducir costos cuando se
  * procesan múltiples clientes en el mismo job diario.
+ * offerContext: descripción de servicios activos del cliente (opcional).
  */
 export async function analyzeConversation(
   clientName: string,
-  conversationText: string
+  conversationText: string,
+  offerContext?: string | null
 ): Promise<ConversationAnalysisResult & { tokenUsage: TokenUsage }> {
   const MODEL = 'claude-sonnet-4-6'
   const emptyUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, model: MODEL }
@@ -46,7 +48,7 @@ export async function analyzeConversation(
     return { tasks: [], tokenUsage: emptyUsage }
   }
 
-  const userPrompt = buildTaskExtractionPrompt(clientName, conversationText)
+  const userPrompt = buildTaskExtractionPrompt(clientName, conversationText, offerContext)
 
   const message = await getClient().messages.create({
     model: MODEL,

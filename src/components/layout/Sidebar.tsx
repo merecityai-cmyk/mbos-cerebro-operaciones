@@ -51,10 +51,10 @@ export function Sidebar({ user, mobileOpen, onMobileClose }: SidebarProps) {
       {/* Logo + close button on mobile */}
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-[#E2E8F0] flex-shrink-0">
         <div className="w-8 h-8 rounded-lg bg-[#1E40AF] flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-xs">UD</span>
+          <span className="text-white font-bold text-xs">NX</span>
         </div>
         <div className="flex-1">
-          <p className="font-bold text-[#0F172A] text-sm leading-tight">United Draft</p>
+          <p className="font-bold text-[#0F172A] text-sm leading-tight">Nex - Merecity Brain OS</p>
           <p className="text-[10px] text-[#64748B] leading-tight">Sistema interno</p>
         </div>
         {/* Close button — only on mobile */}

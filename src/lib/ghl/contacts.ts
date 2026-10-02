@@ -20,17 +20,14 @@ interface GHLContactsSearchResponse {
   }
 }
 
-// La etiqueta que identifica clientes activos de United Draft en GHL
-export const UNITED_DRAFT_CLIENT_TAG = 'cliente united'
+// La etiqueta que identifica clientes activos de Johan NEX en GHL
+export const UNITED_DRAFT_CLIENT_TAG = 'cliente nex'
 
-// Prefijos que identifican grupos de clientes de United Draft en Merecity.
-// Fuente única de verdad: la usan también sync-groups y analyze-conversations.
-// 'ud-' cubre "UD- AZ", "UD-AZ" y "UD- Luisa"; 'udt-' cubre las variantes UDT-.
-export const CLIENT_PREFIXES = ['adm', 'ud-', 'udt-']
+// Prefijos que identifican grupos de clientes de Johan NEX en GHL.
+export const CLIENT_PREFIXES = ['nex-', 'johan-']
 
 /**
- * ¿El nombre del contacto corresponde a un grupo de cliente de United Draft?
- * (empieza con ADM / UD- / UDT-)
+ * ¿El nombre del contacto corresponde a un cliente de Johan NEX?
  */
 export function hasValidClientPrefix(name: string): boolean {
   const lower = name.toLowerCase().trim()

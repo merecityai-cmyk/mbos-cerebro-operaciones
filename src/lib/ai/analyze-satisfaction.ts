@@ -10,7 +10,7 @@ function getClient(): Anthropic {
   return _client
 }
 
-const SYSTEM_PROMPT = `Eres un analista de satisfacción de clientes para United Draft S.A.S., empresa de administración y contabilidad colombiana.
+const SYSTEM_PROMPT = `Eres un analista de satisfacción de clientes para Nex - Merecity Brain OS, agencia de marketing digital colombiana.
 Tu rol es evaluar el nivel de satisfacción de cada cliente basándote en sus conversaciones semanales y el cumplimiento de tareas.
 
 Criterios de evaluación:

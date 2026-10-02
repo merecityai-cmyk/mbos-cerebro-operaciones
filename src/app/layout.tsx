@@ -9,8 +9,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'United Draft Hub',
-  description: 'Plataforma interna de gestión de tareas — United Draft S.A.S.',
+  title: 'Nex - Merecity Brain OS',
+  description: 'Plataforma interna de gestión de tareas — Nex - Merecity Brain OS',
 }
 
 export default function RootLayout({

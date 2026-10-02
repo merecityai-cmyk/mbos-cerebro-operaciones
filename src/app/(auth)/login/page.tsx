@@ -8,9 +8,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-9 h-9 rounded-lg bg-[#1E40AF] flex items-center justify-center">
-            <span className="text-white font-bold text-sm">UD</span>
+            <span className="text-white font-bold text-sm">NX</span>
           </div>
-          <span className="font-bold text-[#0F172A] text-lg">United Draft</span>
+          <span className="font-bold text-[#0F172A] text-lg">Nex - Merecity Brain OS</span>
         </div>
 
         {/* Card con formulario — Suspense necesario por useSearchParams */}
@@ -27,7 +27,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-[#64748B] mt-5">
-          United Draft S.A.S. · Sistema interno
+          Nex - Merecity Brain OS · Sistema interno
         </p>
       </div>
     </div>
